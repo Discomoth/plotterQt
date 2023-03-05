@@ -66,7 +66,7 @@
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QComboBox" name="comboBox"/>
+      <widget class="QComboBox" name="combo_baud"/>
      </item>
      <item row="2" column="0">
       <widget class="QLabel" name="label_timeout">
@@ -104,6 +104,13 @@
         <widget class="QRadioButton" name="radio_none">
          <property name="text">
           <string>None</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="radio_rtscts">
+         <property name="text">
+          <string>RTS/CTS</string>
          </property>
         </widget>
        </item>
