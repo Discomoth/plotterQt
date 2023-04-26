@@ -8,3 +8,5 @@ class HP7440A():
     P1P2_defaults = [(250, 279), (10250, 7479)]
 
     
+    # Functional command list:
+    commands = []
