@@ -7,6 +7,7 @@
 # have its own custom instruction set. Considering these commands are 
 # recognized on an HP 7440A ColorPro with no 'enhancement module' I
 # assume anything with HPGL can understand these commands. 
+
 class genericCommands():
 
     def IN():

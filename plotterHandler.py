@@ -19,6 +19,7 @@ from hpglCommands import genericCommands
 class plotterSerial():
 
     plotterObject = None
+    stopFlag = False
 
     serialPort = ''
     baudRate = 0
@@ -158,6 +159,37 @@ class plotterSerial():
         Allows the manual issuing of a command to the plotter.
         """
 
+
+# TODO Add input buffer checking/reveiving functionality.
+    def serialSend2(self, commandList, commandDelay = 0.1, stopFlag=False):
+        '''
+        commandList:    A list containing command strings to be sent.
+        commandDelay:   The amount of time to add between transmissions.
+        stopFlag:       An object with a boolean value, used to
+                        interrupt a plot in progress.
+
+        RTS/CTS functionality is not included in pySerial, so it is
+        manually implemented here.
+
+        Thanks to Amulek1416 for the solution.
+        https://github.com/pyserial/pyserial/issues/89
+        '''
+        
+        # Command transmission loop
+        for command in commandList:
+
+            if stopFlag:
+                break
+
+            # Set the RTS line high
+            self.plotterObject.setRTS(True)
+
+            while not self.plotterObject.getCTS():
+                pass
+
+            self.plotterObject.write(command.encode())
+            time.sleep(commandDelay)
+            self.plotterObject.setRTS(False)
 
 
 class plotterJog():
