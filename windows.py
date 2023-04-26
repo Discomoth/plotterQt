@@ -5,8 +5,10 @@ from PyQt6.QtGui import QAction
 from PyQt6.QtTest import QTest
 import os, time
 
-from plotterHandler import plotterSerial
+from plotterHandler import plotterSerial, plotterJog
 
+### TEMPORARY Jog units are set to 10 for now until worked into GUI
+jogUnits = 10
 
 class mainWindow(QtWidgets.QMainWindow):
     print(os.path.curdir)
@@ -33,12 +35,80 @@ class mainWindow(QtWidgets.QMainWindow):
 
         # Control button configuration
 
+        ## Jog up button
+        self.button_jogUp = self.findChild(
+            QtWidgets.QPushButton, 'button_up')
+        self.button_jogUp.clicked.connect(self.jogUp)
+
+        ## Jog down button
+        self.button_jogDown = self.findChild(
+            QtWidgets.QPushButton, 'button_down')
+        self.button_jogDown.clicked.connect(self.jogDown)
+
+        ## Jog right button
+        self.button_jogRight = self.findChild(
+            QtWidgets.QPushButton, 'button_right')
+        self.button_jogRight.clicked.connect(self.jogDown)
+
+        ## Jog left button
+        self.button_jogLeft = self.findChild(
+            QtWidgets.QPushButton, 'button_left')
+        self.button_jogLeft.clicked.connect(self.jogLeft)
+
+        ## Top right button
+        self.button_topRight = self.findChild(
+            QtWidgets.QPushButton, 'button_topRight')
+        self.button_topRight.clicked.connect(self.topRight)
+
+        ## Top left button
+        self.button_toplLeft = self.findChild(
+            QtWidgets.QPushButton, 'button_topLeft')
+        self.button_toplLeft.clicked.connect(self.topLeft)
+
+        ## Bottom left button
+        self.button_bottomLeft = self.findChild(
+            QtWidgets.QPushButton, 'button_bottomLeft')
+        self.button_bottomLeft.clicked.connect(self.bottomLeft)
+
+        ## Bottom right button
+        self.button_bottomRight = self.findChild(
+            QtWidgets.QPushButton, 'button_bottomRight')
+        self.button_bottomRight.clicked.connect(self.bottomRight)
+
+
 
     # Function definitions
 
     def plotterConfig(self):
         dialogWindow = plotterConfigWindow()
         dialogWindow.exec()
+
+    def jogUp(self):
+        plotterJog.up(jogUnits)
+
+    def jogDown(self):
+        plotterJog.down(jogUnits)
+
+    def jogRight(self):
+        plotterJog.right(jogUnits)
+
+    def jogLeft(self):
+        plotterJog.left(jogUnits)
+
+    def topLeft(self):
+        plotterJog.topLeft()
+
+    def topRight(self):
+        plotterJog.topRight()
+
+    def bottomLeft(self):
+        plotterJog.bottomLeft()
+
+    def bottomRight(self):
+        plotterJog.bottomRight()
+
+
+
 
 
 class plotterConfigWindow(QtWidgets.QDialog):

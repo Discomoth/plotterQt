@@ -204,13 +204,13 @@ class plotterJog():
         print('jog up')
 
     def down(plotterUnits):
-        print('jog up')
+        print('jog down')
 
     def left(plotterUnits):
-        print('jog up')
+        print('jog left')
 
     def right(plotterUnits):
-        print('jog up')
+        print('jog right')
 
     # These are used to move the plotter head to the respective corners
     # of the object to be plotted.  
@@ -218,13 +218,13 @@ class plotterJog():
         print('move to top left of object to be plotted')
 
     def topRight():
-        print('move to top left of object to be plotted')
+        print('move to top right of object to be plotted')
 
     def bottomLeft():
-        print('move to top left of object to be plotted')
+        print('move to bottom left of object to be plotted')
 
     def bottomRight():
-        print('move to top left of object to be plotted')
+        print('move to bottom right of object to be plotted')
 
 
     # Plotter outline will move the head to outline the extremes of the
