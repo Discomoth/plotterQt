@@ -17,65 +17,60 @@
    <item>
     <layout class="QFormLayout" name="formLayout">
      <item row="0" column="0">
+      <widget class="QLabel" name="label_serialBackend">
+       <property name="text">
+        <string>Serial Backend</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QComboBox" name="combo_serialBackend"/>
+     </item>
+     <item row="1" column="0">
       <widget class="QLabel" name="label_serialPort">
        <property name="text">
         <string>Plotter Serial Port</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="0">
-      <widget class="QLabel" name="label_model">
-       <property name="text">
-        <string>Plotter Model</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="1">
-      <widget class="QComboBox" name="combo_model"/>
-     </item>
-     <item row="5" column="1">
-      <layout class="QHBoxLayout" name="horizontalLayout">
+     <item row="1" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_3">
        <item>
-        <widget class="QPushButton" name="button_testConnect">
+        <widget class="QPushButton" name="button_serialPortRefresh">
+         <property name="maximumSize">
+          <size>
+           <width>75</width>
+           <height>16777215</height>
+          </size>
+         </property>
          <property name="text">
-          <string>Connect</string>
+          <string>Refresh</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="text_testConnect">
-         <property name="readOnly">
-          <bool>true</bool>
-         </property>
-        </widget>
+        <widget class="QComboBox" name="combo_serialPort"/>
        </item>
       </layout>
      </item>
-     <item row="5" column="0">
-      <widget class="QLabel" name="label_testConnect">
-       <property name="text">
-        <string>Test Connection</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
+     <item row="2" column="0">
       <widget class="QLabel" name="label_baudRate">
        <property name="text">
         <string>Baud Rate</string>
        </property>
       </widget>
      </item>
-     <item row="1" column="1">
+     <item row="2" column="1">
       <widget class="QComboBox" name="combo_baud"/>
      </item>
-     <item row="2" column="0">
+     <item row="3" column="0">
       <widget class="QLabel" name="label_timeout">
        <property name="text">
         <string>Timeout</string>
        </property>
       </widget>
      </item>
-     <item row="2" column="1">
+     <item row="3" column="1">
       <widget class="QDoubleSpinBox" name="doubleSpin_timeout">
        <property name="suffix">
         <string> Seconds</string>
@@ -91,14 +86,14 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="0">
+     <item row="4" column="0">
       <widget class="QLabel" name="label_handshaking">
        <property name="text">
         <string>Handshaking</string>
        </property>
       </widget>
      </item>
-     <item row="3" column="1">
+     <item row="4" column="1">
       <layout class="QHBoxLayout" name="horizontalLayout_2">
        <item>
         <widget class="QRadioButton" name="radio_none">
@@ -130,23 +125,83 @@
        </item>
       </layout>
      </item>
-     <item row="0" column="1">
-      <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <item row="5" column="0">
+      <widget class="QLabel" name="label_model">
+       <property name="text">
+        <string>Plotter Model</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="1">
+      <widget class="QComboBox" name="combo_model"/>
+     </item>
+     <item row="6" column="0">
+      <widget class="QLabel" name="label_testConnect">
+       <property name="text">
+        <string>Test Connection</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
-        <widget class="QPushButton" name="button_serialPortRefresh">
-         <property name="maximumSize">
-          <size>
-           <width>75</width>
-           <height>16777215</height>
-          </size>
-         </property>
+        <widget class="QPushButton" name="button_testConnect">
          <property name="text">
-          <string>Refresh</string>
+          <string>Test</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QComboBox" name="combo_serialPort"/>
+        <widget class="QLineEdit" name="text_testConnect">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="7" column="0">
+      <widget class="QPushButton" name="button_initialize">
+       <property name="text">
+        <string>Initialize Plotter</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="1">
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <layout class="QFormLayout" name="formLayout_2">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_instantiatedPlotter">
+           <property name="text">
+            <string>Instantiated Plotter:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_drawingLimits">
+           <property name="text">
+            <string>Drawing Limits:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_bufferSize">
+           <property name="text">
+            <string>Buffer Size (bytes):</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLineEdit" name="text_instantiatedPlotter"/>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLineEdit" name="text_drawingLimits"/>
+         </item>
+         <item row="2" column="1">
+          <widget class="QLineEdit" name="text_bufferSize"/>
+         </item>
+        </layout>
        </item>
       </layout>
      </item>
