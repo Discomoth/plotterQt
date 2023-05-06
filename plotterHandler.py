@@ -16,12 +16,34 @@ import time
 
 from hpglCommands import genericCommands
 
-class plotterSerial():
+class plotterAttributes():
 
-    plotterObject = None
+    '''
+    class plotterAttributes():
+
+    This class is intended to store relevant data and
+    provide functions for both the Chiplotle and PySerial
+    control backends.
+    '''
+
+    # Plotter instance data
+    plotter = None
+    port = None
+    model = None
+
+    plotterInfo = 'None'
+    drawingLimits = 'NA'
+    bufferSize = 'NA'
+
+
+    # List data for interface
+    portList = []
+    baudRates = ['9600']
+    connectionText = ''
+
+    # Control data for interface
     stopFlag = False
-
-    serialPort = ''
+    portIndex = 0
     baudRate = 0
     timeout = 0
     handshaking = ''
@@ -29,10 +51,26 @@ class plotterSerial():
     rtscts = False
     dsrdtr = True
     model = 'None'
-    connectionText = ''
 
-    portList = []
-    baudRates = ['9600']
+
+    def refreshPorts():
+        '''
+        Refreshes the list of active serial ports.
+        '''
+
+        plotterAttributes.portList = []
+        portList_raw = serialList.comports()
+
+        for port, description, hwid in sorted(portList_raw):
+            plotterAttributes.portList.append((str(port), str(description)))
+
+class chiplotlePlotter():
+
+    '''
+    Placeholder
+    '''
+
+class serialPlotter():
 
     def __init__(self):
 
@@ -46,17 +84,6 @@ class plotterSerial():
         elif platform.system() == 'Windows':
             print('Windows PC')
             raise NotImplementedError('This system is not ported to Windows yet!')
-
-    def refreshPorts():
-        '''
-        Refreshes the list of active serial ports.
-        '''
-
-        plotterSerial.portList = []
-        portList_raw = serialList.comports()
-
-        for port, description, hwid in sorted(portList_raw):
-            plotterSerial.portList.append((str(port), str(description)))
 
     def connect(self):
         try:
