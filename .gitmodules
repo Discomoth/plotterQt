@@ -1,0 +1,3 @@
+[submodule "chiplotle_python3"]
+	path = chiplotle_python3
+	url = git@github.com:Discomoth/chiplotle_python3.git
