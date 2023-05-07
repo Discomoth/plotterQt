@@ -30,6 +30,7 @@ class plotterAttributes():
     plotter = None
     port = None
     model = None
+    pen = 0
 
     plotterInfo = 'None'
     drawingLimits = 'NA'

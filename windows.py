@@ -1,6 +1,7 @@
 
 
 from PyQt6 import QtWidgets, uic
+from PyQt6.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QProgressDialog
 from PyQt6.QtGui import QAction
 from PyQt6.QtTest import QTest
 import os, time
@@ -9,6 +10,9 @@ from plotterHandler import plotterAttributes, chiplotlePlotter, serialPlotter, p
 
 from chiplotle.tools.serialtools import sniff_ports_for_plotters, what_plotter_in_port
 from chiplotle.tools.plottertools._instantiate_plotter import _instantiate_plotter
+from chiplotle.tools.io import import_hpgl_file
+from chiplotle.plotters import plotter as basicPlotterObject
+from chiplotle.hpgl import commands
 
 
 ### TEMPORARY Jog units are set to 10 for now until worked into GUI
@@ -23,10 +27,17 @@ class mainWindow(QtWidgets.QMainWindow):
         uic.loadUi('windows/main.ui', self)
         self.show()
 
+        # QGraphicsHandling
+
+        self.view_plotPreview = self.findChild(
+            QGraphicsView, 'view_plotPreview')
 
         # Action bar configuration
         ## File tab
 
+        self.action_importHPGL = self.findChild(
+            QAction, 'action_importHPGL')
+        self.action_importHPGL.triggered.connect(self.importHPGL)
 
         ## Config tab
         self.action_plotterConfig = self.findChild(
@@ -79,9 +90,26 @@ class mainWindow(QtWidgets.QMainWindow):
             QtWidgets.QPushButton, 'button_bottomRight')
         self.button_bottomRight.clicked.connect(self.bottomRight)
 
+        ## Start plot button
+        self.button_startPlot = self.findChild(
+            QtWidgets.QPushButton, 'button_startPlot')
+        self.button_startPlot.clicked.connect(self.startPlot)
+
+        ## Stop plot button
+        self.button_stopPlot = self.findChild(
+            QtWidgets.QPushButton, 'button_stopPlot')
+        self.button_stopPlot.clicked.connect(self.stopPlot)
+
+        ## Dry run button
+        self.button_dryRun = self.findChild(
+            QtWidgets.QPushButton, 'button_dryRun')
+        self.button_dryRun.clicked.connect(self.dryRun)
+
 
 
     # Function definitions
+
+    ## Functions for jogging control
 
     def plotterConfig(self):
         dialogWindow = plotterConfigWindow()
@@ -112,6 +140,106 @@ class mainWindow(QtWidgets.QMainWindow):
         plotterJog.bottomRight()
 
 
+    ## Functions for preview window
+
+    def initializeGraphicsView(self):
+        '''
+        Initial setup work for the graphics view
+        '''
+        self.graphicsScene = QGraphicsScene()
+
+
+    def createPlotArea(self):
+        '''
+        Makes a pair of rectangles representing the hard and
+        soft clipping areas of the plotter. Requires a plotter
+        to have been instantiated.
+        '''
+
+        if plotterAttributes.plotter != None:
+            hardCoords = plotterAttributes.plotter.margins.hard.all_coordinates
+            softCoords = plotterAttributes.plotter.margins.soft.all_coordinates
+
+            print('Plotter Hard Coords: ', hardCoords)
+            print('Plotter Soft Coords: ', softCoords)
+
+    def setupGraphicsItems(self):
+        '''
+        Collects and adds items to be rendered in the scene
+        to the graphicsScene object. 
+        '''
+
+    def renderGraphicsView(self):
+        '''
+        Renders the graphicsView output.
+        '''
+
+        self.view_plotPreview.setScene(self.graphicsScene)
+        self.view_plotPreview.render()
+
+
+    def zoomWheelEvent():
+        print("Not Done!")
+
+
+    ## Functions for file import/export.
+
+    def importHPGL(self):
+        self.hpgl_fileLocation = QFileDialog.getOpenFileName(self, 'Open file')[0]
+        print(self.hpgl_fileLocation)
+
+        if self.hpgl_fileLocation != None and os.path.splitext(self.hpgl_fileLocation)[1] == '.hpgl':
+
+            self.hpglString_chiplotle = import_hpgl_file(self.hpgl_fileLocation)
+
+    ## Functions for plotter control.
+
+    def plotterProgress(self):
+        '''
+        WIP - maybe integrate into MainWindow?
+        A simple progress bar to indicate and contain the
+        plotter write instance.
+        '''
+
+        self.progressMinimum = 0
+        self.progressMaximum = len(self.hpglString_chiplotle)
+        self.progressCurrent = 0
+
+        returnValues = QProgressDialog(
+            "Plot progress",
+            "Cancel plot",
+            self.progressMinimum,
+            self.progressMaximum)
+
+
+    def startPlot(self):
+        '''
+        Starts sending data to the plotter.
+        Stop flag stops the plot when false.
+        '''
+        plotterAttributes.pen = 1
+
+        if len(self.hpglString_chiplotle) != 0:
+            plotterAttributes.plotter.write(commands.SP(plotterAttributes.pen))
+            #plotterAttributes.plotter.write_file(self.hpgl_fileLocation)
+            plotterAttributes.plotter.write(self.hpglString_chiplotle)
+        elif len(self.hpglString_chiplotle) == 0:
+            print("No HPGL file loaded!")
+
+    def stopPlot(self):
+        raise NotImplementedError("Not implemented yet!")
+
+    def dryRun(self):
+        '''
+        Starts sending data to the plotter.
+        Stop flag stops the plot when True.
+        '''
+        if len(self.hpglString_chiplotle) != 0:
+            plotterAttributes.plotter.write(commands.SP(0))
+            #plotterAttributes.plotter.write_file(self.hpgl_fileLocation)
+            plotterAttributes.plotter.write(self.hpglString_chiplotle)
+        elif len(self.hpglString_chiplotle) == 0:
+            print("No HPGL file loaded!")
 
 
 
@@ -166,11 +294,12 @@ class plotterConfigWindow(QtWidgets.QDialog):
         self.radio_rtscts = self.findChild(
             QtWidgets.QRadioButton, 'radio_rtscts')
         self.radio_rtscts.setChecked(plotterAttributes.rtscts)
-        self.radio_rtscts.setDisabled(True)
 
         self.radio_none = self.findChild(
             QtWidgets.QRadioButton, 'radio_none')
-        self.radio_none.setDisabled(True)
+
+        self.doubleSpin_flowDelay = self.findChild(
+            QtWidgets.QDoubleSpinBox, 'doubleSpin_flowDelay')
 
         self.combo_model = self.findChild(
             QtWidgets.QComboBox, 'combo_model')
@@ -224,8 +353,6 @@ class plotterConfigWindow(QtWidgets.QDialog):
             self.doubleSpin_timeout.setDisabled(True)
             self.radio_xonxoff.setDisabled(True)
             self.radio_dsrdtr.setDisabled(True)
-            self.radio_rtscts.setDisabled(True)
-            self.radio_none.setDisabled(True)
 
         elif self.combo_serialBackend.currentText() == 'PySerial':
             self.combo_model.setDisabled(False)
@@ -233,8 +360,6 @@ class plotterConfigWindow(QtWidgets.QDialog):
             self.doubleSpin_timeout.setDisabled(False)
             self.radio_xonxoff.setDisabled(False)
             self.radio_dsrdtr.setDisabled(False)
-            self.radio_rtscts.setDisabled(False)
-            self.radio_none.setDisabled(False)
 
 
     def testConnect(self):
@@ -311,7 +436,12 @@ class plotterConfigWindow(QtWidgets.QDialog):
             self.text_drawingLimits.setText(plotterAttributes.drawingLimits)
             self.text_bufferSize.setText(plotterAttributes.bufferSize)
 
+            # Plotter RTS/CTS implementation
+            plotterAttributes.plotter.rtscts = self.radio_rtscts.isChecked()
+            plotterAttributes.plotter.flowDelay = self.doubleSpin_flowDelay.value()
+
         elif self.combo_serialBackend.currentText() == 'PySerial':
             raise NotImplementedError('The PySerial connect function has not been implemented yet!')
+
 
         
