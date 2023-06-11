@@ -28,7 +28,6 @@ class mainWindow(QtWidgets.QMainWindow):
         self.show()
 
         # QGraphicsHandling
-
         self.view_plotPreview = self.findChild(
             QGraphicsView, 'view_plotPreview')
 
@@ -256,11 +255,16 @@ class plotterConfigWindow(QtWidgets.QDialog):
         uic.loadUi('windows/plotterConfig.ui', self)
         self.show()
 
-        # Configuration
+        # QDialogButtonBox setup
+        self.buttonBox = self.findChild(
+            QtWidgets.QDialogButtonBox, 'buttonBox')
+        self.buttonBox.accepted.connect(self.storeInformation)
+
+        # Configuration element setup
         self.combo_serialBackend = self.findChild(
             QtWidgets.QComboBox, 'combo_serialBackend')
         self.combo_serialBackend.addItems(self.serialBackendList)
-        self.combo_serialBackend.setCurrentIndex(self.serialBackend)
+        self.combo_serialBackend.setCurrentIndex(plotterAttributes.serialBackendIndex)
         self.combo_serialBackend.currentTextChanged.connect(self.serialBackendUpdate)
 
         self.combo_serialPort = self.findChild(
@@ -275,10 +279,12 @@ class plotterConfigWindow(QtWidgets.QDialog):
         self.combo_baudRate = self.findChild(
             QtWidgets.QComboBox, 'combo_baud')
         self.combo_baudRate.addItems(plotterAttributes.baudRates)
+        self.combo_baudRate.setCurrentIndex(plotterAttributes.baudRateIndex)
         self.combo_baudRate.setDisabled(True)
 
         self.doubleSpin_timeout = self.findChild(
             QtWidgets.QDoubleSpinBox, 'doubleSpin_timeout')
+        self.doubleSpin_timeout.setValue(plotterAttributes.timeout)
         self.doubleSpin_timeout.setDisabled(True)
 
         self.radio_xonxoff = self.findChild(
@@ -300,6 +306,7 @@ class plotterConfigWindow(QtWidgets.QDialog):
 
         self.doubleSpin_flowDelay = self.findChild(
             QtWidgets.QDoubleSpinBox, 'doubleSpin_flowDelay')
+        self.doubleSpin_flowDelay.setValue(plotterAttributes.flowDelay)
 
         self.combo_model = self.findChild(
             QtWidgets.QComboBox, 'combo_model')
@@ -330,6 +337,26 @@ class plotterConfigWindow(QtWidgets.QDialog):
 
 
         # Functions
+
+    def storeInformation(self):
+        '''
+        Takes infromation from the plotter config dialog window and
+        enters it into the plotterAttributes class variables
+        '''
+
+        plotterAttributes.serialBackend = self.combo_serialBackend.currentIndex()
+        plotterAttributes.port = plotterAttributes.portList[self.combo_serialPort.currentIndex()][0]
+        plotterAttributes.portIndex = self.combo_serialPort.currentIndex()
+        plotterAttributes.baudRate = int(plotterAttributes.baudRates[self.combo_baudRate.currentIndex()])
+        plotterAttributes.baudRateIndex = self.combo_baudRate.currentIndex()
+        plotterAttributes.timeout = self.doubleSpin_timeout.value()
+        plotterAttributes.xonxoff = self.radio_xonxoff.isChecked()
+        plotterAttributes.dsrdtr = self.radio_dsrdtr.isChecked()
+        plotterAttributes.rtscts = self.radio_rtscts.isChecked()
+        plotterAttributes.noFlowCtrl = self.radio_none.isChecked()
+        plotterAttributes.flowDelay = self.doubleSpin_flowDelay.value()
+
+
 
     def serialRefresh(self):
         print('serialRefresh!')
