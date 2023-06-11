@@ -32,6 +32,7 @@ class plotterAttributes():
     model = None
     pen = 0
 
+    # Plotter test connect data
     plotterInfo = 'None'
     drawingLimits = 'NA'
     bufferSize = 'NA'
@@ -40,18 +41,20 @@ class plotterAttributes():
     # List data for interface
     portList = []
     baudRates = ['9600']
-    connectionText = ''
 
     # Control data for interface
+    serialBackendIndex = 0
     stopFlag = False
     portIndex = 0
     baudRate = 0
+    baudRateIndex = 0
     timeout = 0
     handshaking = ''
     xonxoff = False
-    rtscts = False
-    dsrdtr = True
-    model = 'None'
+    rtscts = True
+    dsrdtr = False
+    noFlowCtrl = False
+    flowDelay = 0.05
 
 
     def refreshPorts():
