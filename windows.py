@@ -189,7 +189,13 @@ class mainWindow(QtWidgets.QMainWindow):
 
         if self.hpgl_fileLocation != None and os.path.splitext(self.hpgl_fileLocation)[1] == '.hpgl':
 
-            self.hpglString_chiplotle = import_hpgl_file(self.hpgl_fileLocation)
+            if plotterAttributes.serialBackend == 'Chiplotle':
+                self.hpglString_chiplotle = import_hpgl_file(self.hpgl_fileLocation)
+                print('HPGL Command String length: ' + str(len(self.hpglString_chiplotle)))
+            elif plotterAttributes.serialBackend == 'PySerial':
+                raise NotImplementedError('The PySerial connect function has not been implemented yet!')
+
+
 
     ## Functions for plotter control.
 
