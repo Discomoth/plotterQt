@@ -104,8 +104,6 @@ class mainWindow(QtWidgets.QMainWindow):
             QtWidgets.QPushButton, 'button_dryRun')
         self.button_dryRun.clicked.connect(self.dryRun)
 
-
-
     # Function definitions
 
     ## Functions for jogging control
@@ -358,7 +356,8 @@ class plotterConfigWindow(QtWidgets.QDialog):
         enters it into the plotterAttributes class variables
         '''
 
-        plotterAttributes.serialBackend = self.combo_serialBackend.currentIndex()
+        plotterAttributes.serialBackendIndex = self.combo_serialBackend.currentIndex()
+        plotterAttributes.serialBackend = self.combo_serialBackend.currentText()
         plotterAttributes.port = plotterAttributes.portList[self.combo_serialPort.currentIndex()][0]
         plotterAttributes.portIndex = self.combo_serialPort.currentIndex()
         plotterAttributes.baudRate = int(plotterAttributes.baudRates[self.combo_baudRate.currentIndex()])
