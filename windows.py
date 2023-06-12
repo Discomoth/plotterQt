@@ -223,10 +223,18 @@ class mainWindow(QtWidgets.QMainWindow):
         Stop flag stops the plot when false.
         '''
         plotterAttributes.pen = 1
+        setupCommands = [
+            commands.SP(plotterAttributes.pen).format,
+            commands.VS(plotterAttributes.penVelocity).format,
+            commands.AS(plotterAttributes.penAccel).format,
+            commands.FS(plotterAttributes.penForce).format
+        ]
 
         if len(self.hpglString_chiplotle) != 0:
-            plotterAttributes.plotter.write(commands.SP(plotterAttributes.pen))
-            #plotterAttributes.plotter.write_file(self.hpgl_fileLocation)
+            for command in setupCommands:
+                plotterAttributes.plotter.write(command)
+                time.sleep(1.5)
+            
             plotterAttributes.plotter.write(self.hpglString_chiplotle)
         elif len(self.hpglString_chiplotle) == 0:
             print("No HPGL file loaded!")
