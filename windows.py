@@ -467,6 +467,9 @@ class plotterConfigWindow(QtWidgets.QDialog):
             plotterAttributes.plotter.rtscts = self.radio_rtscts.isChecked()
             plotterAttributes.plotter.flowDelay = self.doubleSpin_flowDelay.value()
 
+            # Send initialize command to plotter
+            plotterAttributes.plotter.write(commands.IN().format)
+
         elif self.combo_serialBackend.currentText() == 'PySerial':
             raise NotImplementedError('The PySerial connect function has not been implemented yet!')
 
