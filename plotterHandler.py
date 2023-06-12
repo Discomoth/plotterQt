@@ -31,6 +31,9 @@ class plotterAttributes():
     port = None
     model = None
     pen = 0
+    penVelocity = 15
+    penAccel = 1
+    penForce = 4
 
     # Plotter test connect data
     plotterInfo = 'None'
@@ -44,6 +47,7 @@ class plotterAttributes():
 
     # Control data for interface
     serialBackendIndex = 0
+    serialBackend = ''
     stopFlag = False
     portIndex = 0
     baudRate = 0
@@ -54,7 +58,8 @@ class plotterAttributes():
     rtscts = True
     dsrdtr = False
     noFlowCtrl = False
-    flowDelay = 0.05
+    flowDelay = 0.015
+
 
 
     def refreshPorts():
