@@ -276,16 +276,23 @@ class plotterJog():
     # These are used to control jogging of the plotter head. Similar to
     # K40Whisperer, this will allow one to align plots manually to where
     # they desire to execute the plot 
-    def up(plotterUnits):
+    def home():
+        plotterAttributes.plotter.goto(0,0)
+
+    def up():
+        plotterAttributes.plotter.nudge(0, plotterAttributes.jogDistance)
         print('jog up')
 
-    def down(plotterUnits):
+    def down():
+        plotterAttributes.plotter.nudge(0, (plotterAttributes.jogDistance * -1))
         print('jog down')
 
-    def left(plotterUnits):
+    def left():
+        plotterAttributes.plotter.nudge((plotterAttributes.jogDistance * -1), 0)
         print('jog left')
 
-    def right(plotterUnits):
+    def right():
+        plotterAttributes.plotter.nudge(plotterAttributes.jogDistance, 0)
         print('jog right')
 
     # These are used to move the plotter head to the respective corners
