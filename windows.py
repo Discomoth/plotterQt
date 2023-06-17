@@ -837,4 +837,10 @@ class addHPGLWindow(QtWidgets.QDialog):
                 self.hpglString_chiplotle = import_hpgl_file(self.hpgl_fileLocation)
                 print('HPGL Command String length: ' + str(len(self.hpglString_chiplotle)))
 
-        
+                
+    def changeFileName(self):
+        try:
+            self.label_fileName.setText(os.path.split(self.hpgl_fileLocation)[1])
+        except:
+            print(self.hpgl_fileLocation)
+            self.label_fileName.setText('None')
