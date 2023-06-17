@@ -79,7 +79,7 @@ class mainWindow(QtWidgets.QMainWindow):
         ## Jog right button
         self.button_jogRight = self.findChild(
             QtWidgets.QPushButton, 'button_right')
-        self.button_jogRight.clicked.connect(self.jogDown)
+        self.button_jogRight.clicked.connect(self.jogRight)
 
         ## Jog left button
         self.button_jogLeft = self.findChild(
