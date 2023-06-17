@@ -14,10 +14,6 @@ from chiplotle.tools.io import import_hpgl_file
 from chiplotle.plotters import plotter as basicPlotterObject
 from chiplotle.hpgl import commands
 
-
-### TEMPORARY Jog units are set to 10 for now until worked into GUI
-jogUnits = 10
-
 class mainWindow(QtWidgets.QMainWindow):
     print(os.path.curdir)
 
@@ -48,6 +44,10 @@ class mainWindow(QtWidgets.QMainWindow):
             QtWidgets.QGraphicsView, 'graphicsView')
 
         # Control button configuration
+        self.spinBox_jogDistance = self.findChild(
+            QtWidgets.QSpinBox,'spinBox_jogDistance')
+        self.spinBox_jogDistance.setValue(plotterAttributes.jogDistance)
+        self.spinBox_jogDistance.textChanged.connect(self.jogDistanceChange)
 
         ## Jog up button
         self.button_jogUp = self.findChild(
@@ -112,17 +112,24 @@ class mainWindow(QtWidgets.QMainWindow):
         dialogWindow = plotterConfigWindow()
         dialogWindow.exec()
 
+    ## Jogging control
+    def home(self):
+        plotterJog.home()
+
+    def jogDistanceChange(self):
+        plotterAttributes.jogDistance = self.spinBox_jogDistance.value()
+
     def jogUp(self):
-        plotterJog.up(jogUnits)
+        plotterJog.up()
 
     def jogDown(self):
-        plotterJog.down(jogUnits)
+        plotterJog.down()
 
     def jogRight(self):
-        plotterJog.right(jogUnits)
+        plotterJog.right()
 
     def jogLeft(self):
-        plotterJog.left(jogUnits)
+        plotterJog.left()
 
     def topLeft(self):
         plotterJog.topLeft()
