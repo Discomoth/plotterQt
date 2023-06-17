@@ -104,6 +104,18 @@ class mainWindow(QtWidgets.QMainWindow):
             QtWidgets.QPushButton, 'button_dryRun')
         self.button_dryRun.clicked.connect(self.dryRun)
 
+        ## Multiplot Configuration
+        ### listWidget
+        #self.plotList = self.findChild(
+        #    QtWidgets.QListWidget, 'listWidget_plotList')
+
+        ### Buttons
+        #self.addPlot = self.findChild(
+        #    QtWidgets.QPushButton, 'button_addListItem')
+        #self.addPlot.clicked.connect()
+        
+        #self.delPlot = self.findChild(
+        #    QtWidgets.QPushButton, 'button_delListItem')
     # Function definitions
 
     ## Functions for jogging control
@@ -112,6 +124,19 @@ class mainWindow(QtWidgets.QMainWindow):
         dialogWindow = plotterConfigWindow()
         dialogWindow.exec()
 
+    ### Multiplot Config Windows
+
+    def addHPGL(self):
+        dialogWindow = addHPGLWindow()
+        dialogWindow.exec()
+
+    ## Active pen control
+    def changeActivePen(self):
+        if self.comboBox_activePen != '':
+            plotterAttributes.activePen = self.comboBox_activePen.currentText()
+            print("Active Pen: {}".format(plotterAttributes.activePen))
+        else:
+            pass
     ## Jogging control
     def home(self):
         plotterJog.home()
@@ -493,5 +518,34 @@ class plotterConfigWindow(QtWidgets.QDialog):
         elif self.combo_serialBackend.currentText() == 'PySerial':
             raise NotImplementedError('The PySerial connect function has not been implemented yet!')
 
+# WIP 
+class addHPGLWindow(QtWidgets.QDialog):
+
+    hpgl_fileLocation = None
+
+    def __init__(self):
+        super(addHPGLWindow, self).__init__()
+        uic.loadUi('windows/addHPGL.ui', self)
+        self.show()
+
+
+        # Setup window elements
+
+        button_importHPGL = self.findChild(
+            QtWidgets.QPushButton, 'button_fileBrowse')
+        button_importHPGL.clicked.connect(self.importHPGL)
+
+        label_fileName = self.findChild(
+            QtWidgets.QLineEdit, 'text_fileName')
+
+    def importHPGL(self):
+        self.hpgl_fileLocation = QFileDialog.getOpenFileName(self, 'Open file')[0]
+        print(self.hpgl_fileLocation)
+
+        if self.hpgl_fileLocation != None and os.path.splitext(self.hpgl_fileLocation)[1] == '.hpgl':
+
+            if plotterAttributes.serialBackend == 'Chiplotle':
+                self.hpglString_chiplotle = import_hpgl_file(self.hpgl_fileLocation)
+                print('HPGL Command String length: ' + str(len(self.hpglString_chiplotle)))
 
         
