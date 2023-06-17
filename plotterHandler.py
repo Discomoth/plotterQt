@@ -13,6 +13,7 @@ import serial
 import serial.tools.list_ports as serialList
 import platform
 import time
+from PyQt6.QtGui import QColor
 
 from hpglCommands import genericCommands
 
@@ -34,6 +35,7 @@ class plotterAttributes():
     penVelocity = 15
     penAccel = 1
     penForce = 4
+    penThick = 0.3
 
     # Plotter test connect data
     plotterInfo = 'None'
@@ -59,7 +61,45 @@ class plotterAttributes():
     dsrdtr = False
     noFlowCtrl = False
     flowDelay = 0.015
+    jogDistance = 100
 
+    # Pen handling information
+    carouselType = 0
+    penMap = ''
+    penConfig = {
+        'Pen 1':{
+            'enabled':True,
+            'penNumber':1,
+            'color':QColor.fromRgb(0x000000),
+            'acceleration':1,
+            'velocity':15,
+            'force':4,
+            'thickness':0.3,
+            'linetype':0
+        }
+    }
+
+    defaultColors = [
+        QColor.fromRgb(0x000000),
+        QColor.fromRgb(0x57e389),
+        QColor.fromRgb(0xf8e45c),
+        QColor.fromRgb(0xffa348),
+        QColor.fromRgb(0xed333b),
+        QColor.fromRgb(0xc061cb),
+        QColor.fromRgb(0x62a0ea),
+        QColor.fromRgb(0xb5835a),
+    ]
+    penConfigDone = False
+    selectedPen = 'Pen 1'
+    activePen = 'Pen 1'
+
+    # This list is to handle special plotters that have carousels but do
+    # not support the OT command and auto pen detection.
+    # The 7440A is the only one I am currently aware of that is like this.
+    # I'm sure there are others out there.
+    pseudoCarouselPlotters = [
+        '7440A'
+    ]
 
 
     def refreshPorts():
