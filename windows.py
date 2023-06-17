@@ -1,9 +1,10 @@
 
 
 from PyQt6 import QtWidgets, uic
-from PyQt6.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QProgressDialog
-from PyQt6.QtGui import QAction
+from PyQt6.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QProgressDialog, QColorDialog
+from PyQt6.QtGui import QAction, QIcon, QColor, QPalette
 from PyQt6.QtTest import QTest
+from PyQt6.QtCore import pyqtSlot
 import os, time
 
 from plotterHandler import plotterAttributes, chiplotlePlotter, serialPlotter, plotterJog
@@ -28,8 +29,8 @@ class mainWindow(QtWidgets.QMainWindow):
             QGraphicsView, 'view_plotPreview')
 
         # Action bar configuration
-        ## File tab
 
+        ## File tab
         self.action_importHPGL = self.findChild(
             QAction, 'action_importHPGL')
         self.action_importHPGL.triggered.connect(self.importHPGL)
@@ -38,6 +39,10 @@ class mainWindow(QtWidgets.QMainWindow):
         self.action_plotterConfig = self.findChild(
             QAction, 'action_plotterConfig')
         self.action_plotterConfig.triggered.connect(self.plotterConfig)
+
+        self.action_penConfig = self.findChild(
+            QAction, 'action_penConfig')
+        self.action_penConfig.triggered.connect(self.penConfig)
 
         # Graphics view initialization
         self.graphicsWindow = self.findChild(
@@ -48,6 +53,18 @@ class mainWindow(QtWidgets.QMainWindow):
             QtWidgets.QSpinBox,'spinBox_jogDistance')
         self.spinBox_jogDistance.setValue(plotterAttributes.jogDistance)
         self.spinBox_jogDistance.textChanged.connect(self.jogDistanceChange)
+
+        ## Active Pen comboBox
+        self.comboBox_activePen = self.findChild(
+            QtWidgets.QComboBox, 'comboBox_activePen')
+        self.comboBox_activePen.addItems(plotterAttributes.penConfig.keys())
+        self.comboBox_activePen.setCurrentIndex(0)
+        self.comboBox_activePen.currentTextChanged.connect(self.changeActivePen)
+
+        ## Home Button
+        self.button_home = self.findChild(
+            QtWidgets.QPushButton, 'button_home')
+        self.button_home.clicked.connect(self.home)
 
         ## Jog up button
         self.button_jogUp = self.findChild(
@@ -116,13 +133,22 @@ class mainWindow(QtWidgets.QMainWindow):
         
         #self.delPlot = self.findChild(
         #    QtWidgets.QPushButton, 'button_delListItem')
+
     # Function definitions
 
-    ## Functions for jogging control
+    ## Config Windows
 
+    ### Plotter config window
     def plotterConfig(self):
         dialogWindow = plotterConfigWindow()
         dialogWindow.exec()
+
+    ### penConfig window
+    def penConfig(self):
+        dialogWindow = penConfigWindow()
+        dialogWindow.exec()
+        self.comboBox_activePen.clear()
+        self.comboBox_activePen.addItems(plotterAttributes.penConfig.keys())
 
     ### Multiplot Config Windows
 
@@ -137,6 +163,7 @@ class mainWindow(QtWidgets.QMainWindow):
             print("Active Pen: {}".format(plotterAttributes.activePen))
         else:
             pass
+
     ## Jogging control
     def home(self):
         plotterJog.home()
@@ -252,12 +279,13 @@ class mainWindow(QtWidgets.QMainWindow):
         Starts sending data to the plotter.
         Stop flag stops the plot when false.
         '''
-        plotterAttributes.pen = 1
+        plotterAttributes.pen = plotterAttributes.activePen
+
         setupCommands = [
-            commands.SP(plotterAttributes.pen).format,
-            commands.VS(plotterAttributes.penVelocity).format,
-            commands.AS(plotterAttributes.penAccel).format,
-            commands.FS(plotterAttributes.penForce).format
+            commands.SP(plotterAttributes.penConfig[plotterAttributes.activePen]['penNumber']).format,
+            commands.VS(plotterAttributes.penConfig[plotterAttributes.activePen]['velocity']).format,
+            commands.AS(plotterAttributes.penConfig[plotterAttributes.activePen]['acceleration']).format,
+            commands.FS(plotterAttributes.penConfig[plotterAttributes.activePen]['force']).format
         ]
 
         if len(self.hpglString_chiplotle) != 0:
@@ -518,6 +546,267 @@ class plotterConfigWindow(QtWidgets.QDialog):
         elif self.combo_serialBackend.currentText() == 'PySerial':
             raise NotImplementedError('The PySerial connect function has not been implemented yet!')
 
+class penConfigWindow(QtWidgets.QDialog):
+
+    def __init__(self):
+        print('placeholder')
+        super(penConfigWindow, self).__init__()
+        uic.loadUi('windows/penConfig.ui', self)
+        self.show()
+
+        # Setup pen selection
+        self.comboBox_pen = self.findChild(
+            QtWidgets.QComboBox, 'comboBox_pen')
+        self.comboBox_pen.currentTextChanged.connect(self.selectPen)
+        self.comboBox_pen.setCurrentText(plotterAttributes.selectedPen)
+
+        self.button_refreshPens = self.findChild(
+            QtWidgets.QPushButton, 'button_refreshPens')
+        self.button_refreshPens.clicked.connect(self.refreshPens)
+
+        self.button_pickColor = self.findChild(
+            QtWidgets.QPushButton, 'button_pickColor')
+        self.button_pickColor.clicked.connect(self.openColorDialog)
+
+        self.text_color = self.findChild(
+            QtWidgets.QLineEdit, 'text_color')
+
+        self.spinBox_penAcceleration = self.findChild(
+            QtWidgets.QSpinBox, 'spinBox_penAcceleration')
+        self.spinBox_penAcceleration.textChanged.connect(self.penAccelChanged)
+
+        self.spinBox_penVelocity = self.findChild(
+            QtWidgets.QSpinBox, 'spinBox_penVelocity')
+        self.spinBox_penVelocity.textChanged.connect(self.penVeloChanged)
+
+        self.spinBox_penForce = self.findChild(
+            QtWidgets.QSpinBox, 'spinBox_penForce')
+        self.spinBox_penForce.textChanged.connect(self.penForceChanged)
+
+        self.doubleSpinBox_penThickness = self.findChild(
+            QtWidgets.QDoubleSpinBox, 'doubleSpinBox_penThickness')
+        self.doubleSpinBox_penThickness.textChanged.connect(self.penThickChanged)
+
+        if plotterAttributes.penConfigDone == False:
+            self.setupPens()
+            plotterAttributes.penConfigDone = True
+        else:
+            self.selectPen()
+        
+        # Add the pens to the comboBox
+        plotterAttributes.penKeyList = list(plotterAttributes.penConfig.keys())
+        self.comboBox_pen.addItems(plotterAttributes.penKeyList)
+
+    # Functions
+
+    ## Spinbox value change handling
+    def penAccelChanged(self):
+        plotterAttributes.penConfig[plotterAttributes.selectedPen]['acceleration'] = self.spinBox_penAcceleration.value()
+
+    def penVeloChanged(self):
+        plotterAttributes.penConfig[plotterAttributes.selectedPen]['velocity'] = self.spinBox_penVelocity.value()
+
+    def penForceChanged(self):
+        plotterAttributes.penConfig[plotterAttributes.selectedPen]['force'] = self.spinBox_penForce.value()
+
+    def penThickChanged(self):
+        plotterAttributes.penConfig[plotterAttributes.selectedPen]['thickness'] = self.doubleSpinBox_penThickness.value()
+
+    ## Other window functions
+    def selectPen(self):
+        '''
+        Change the values in the menu to the values within the penConfig
+        dictionary
+        '''
+        # Get currently selected pen string value
+        if self.comboBox_pen.currentText() != '':
+            plotterAttributes.selectedPen = self.comboBox_pen.currentText()
+        else:
+            pass
+
+        self.changeColor()
+
+        # Set the spinBox values
+        self.spinBox_penAcceleration.setValue(plotterAttributes.penConfig[plotterAttributes.selectedPen]['acceleration'])
+        self.spinBox_penVelocity.setValue(plotterAttributes.penConfig[plotterAttributes.selectedPen]['velocity'])
+        self.spinBox_penForce.setValue(plotterAttributes.penConfig[plotterAttributes.selectedPen]['force'])
+        self.doubleSpinBox_penThickness.setValue(plotterAttributes.penConfig[plotterAttributes.selectedPen]['thickness'])
+
+    def refreshPens():
+        print('Not implemented yet')
+
+    def changeColor(self):
+        '''
+        Select and apply the color to the pen in the penConfig dictionary.
+        '''
+        # New attempt:
+        self.text_color.setStyleSheet("background-color: {}".format(plotterAttributes.penConfig[plotterAttributes.selectedPen]['color'].name()))
+
+
+        # Old attempt:
+        # Setup color palette stuff
+        #self.colorPalette = self.text_color.palette()
+        # Set the color palette to what the selected pen requires
+        #self.colorPalette.setColor(self.colorPalette.base, plotterAttributes.penConfig[plotterAttributes.selectedPen]['color'])
+        # Set the color of the text box
+        #self.text_color.setPalette(self.colorPalette)
+
+    def openColorDialog(self):
+        colorValue = QColorDialog.getColor()
+
+        if colorValue.isValid():
+            print(colorValue)
+            plotterAttributes.penConfig[plotterAttributes.selectedPen]['color'] = colorValue
+            self.changeColor()
+    
+    def setupPens(self):
+
+        # Determine what pens are in the plotter and the carousel type.
+        penStatus = self.checkPens()
+
+        if penStatus == 0:
+            self.penDictSetup()
+
+        elif penStatus == 1:
+            print('Pen plotter does not support the OT command and is assumed to not use a carousel.\r1 Pen enabled.')
+            print('penConfig dict remains default.')
+
+        elif penStatus == 2:
+            self.penDictSetup()
+
+        elif penStatus == 3:
+            print('PROBLEM -- OT penCheck missed if catches')
+
+        else:
+            print("penStatus value not in if catch!")
+            print('penStatus: {}'.format(penStatus))
+
+    def checkPens(self):
+        if plotterAttributes.plotter == None:
+            # TROUBLESHOOTING BYPASS
+            # Bit states are all set to 1
+            plotterAttributes.penMap = '11111111'
+
+            # Making this a string to represent Pseudo would be weird to handle. 
+            # I'm putting it out of range of the acceptable OT outputs (-1-3) as -2.
+            plotterAttributes.carouselType = -2
+            return 2
+        else:
+
+            plotterID = plotterAttributes.plotter.id
+
+            # See if plotter supports OT command (7575A/7576A/7550A, etc.)
+            reply = plotterAttributes.plotter.carousel_type
+
+            if b'OT' in plotterAttributes.plotter.allowedHPGLCommands:
+
+                # Ask plotter about carousel type and pen count
+                replyDecoded = reply.decode('ascii').strip().split(',')
+
+                # Store the returned carousel type
+                plotterAttributes.carouselType = int(replyDecoded[0])
+
+                # Convert the interger map value to a string of bit states
+                # and store it.
+                # int value converts to a simple string of bits with leading 0s
+                # 41 converts to 00101001
+                # First bit = 8th pen presence, last bit =  1st pen presence
+                plotterAttributes.penMap = '{:08b}'.format(int(replyDecoded[1]))
+                return 0
+            
+            # If plotter does not support OT command and does not have a carousel
+            elif not b'OT' in plotterAttributes.plotter.allowedCommands and plotterID not in plotterAttributes.pseudoCarouselPlotters:
+                plotterAttributes.penMap = '00000001'
+                plotterAttributes.carouselType = 0
+                return 1
+            
+            # If plotter does not support OT but has a carousel
+            # TODO This probably should be an attribute of the plotter object?
+            # It sets the penmap to show there is a pen in every position.
+            # It is up to the operator to stock/choose pens.
+            elif not b'OT' in plotterAttributes.plotter.allowedCommands and plotterID in plotterAttributes.pseudoCarouselPlotters:
+                print('The {} plotter supports carousels, but not auto detection!\rAll pens set as present!'.format(plotterID))
+                
+                # Bit states are all set to 1
+                plotterAttributes.penMap = '11111111'
+
+                # Making this a string to represent Pseudo would be weird to handle. 
+                # I'm putting it out of range of the acceptable OT outputs (-1-3) as -2.
+                plotterAttributes.carouselType = -2
+                return 2
+            
+            else:
+                print('PROBLEM -- OT penCheck missed if catches')
+                return 3
+        
+    def penDictSetup(self):
+        '''
+        Iterates through the pens and the carousel config to build 
+        the new penConfig dictionary.
+        '''
+
+        plotterAttributes.penConfig = {}
+
+        # Handling the pseudo carousel case
+        if plotterAttributes.carouselType == -2:
+
+            # Clear the pen config dictionary
+            plotterAttributes.penConfig.clear()
+
+            # Prep the dictionary - In this case, all the pens are marked as pen 1
+            for index, number in enumerate([number + 1 for number in range(8)]):
+                plotterAttributes.penConfig['Pen ' + str(number)] = {
+                    'enabled':True,
+                    'penNumber':1,
+                    'color':plotterAttributes.defaultColors[index],
+                    'acceleration':1,
+                    'velocity':15,
+                    'force':4,
+                    'thickness':0.3,
+                    'linetype':0
+                }
+            # Bit states don't really matter in this instance.
+
+        elif plotterAttributes.carouselType == -1:
+            print('Unknown Carousel reported from plotter!\r Pens not initialized')
+
+        elif plotterAttributes.carouselType == 0:
+            print('No carousel, one pen only.')
+
+        elif plotterAttributes.carouselType > 0:
+            print('Setup carousel')
+
+            # Clear the pen config dictionary
+            plotterAttributes.penConfig.clear()
+
+            # Prep the dictionary - In this case, all the pens are marked as pen 1
+            for index, number in enumerate([number + 1 for number in range(8)]):
+                plotterAttributes.penConfig['Pen ' + str(number)] = {
+                    'enabled':True,
+                    'penNumber':number,
+                    'color':plotterAttributes.defaultColors[index],
+                    'acceleration':1,
+                    'velocity':15,
+                    'force':4,
+                    'thickness':0.3,
+                    'linetype':0
+                }
+
+            for bitState, penKey in zip(plotterAttributes.penMap, list(plotterAttributes.penConfig.keys())[::-1]):
+
+                if bitState == '1':
+                    plotterAttributes.penConfig[penKey]['enabled'] = True
+                elif bitState == '0':
+                    plotterAttributes.penConfig[penKey]['enabled'] = False
+                    plotterAttributes.penConfig.pop(penKey)
+                else:
+                    print('Index error! Too many bitstates parsed!!')
+                    print('penMap: {}'.format(plotterAttributes.penMap))
+                    print('bitState: {}'.format(bitState))
+
+        else:
+            print('Plotter carousel value missed in penSetup if catch!')
+            
 # WIP 
 class addHPGLWindow(QtWidgets.QDialog):
 
