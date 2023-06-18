@@ -5,7 +5,10 @@ from PyQt6.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QProgres
 from PyQt6.QtGui import QAction, QIcon, QColor, QPalette
 from PyQt6.QtTest import QTest
 from PyQt6.QtCore import pyqtSlot
+from PyQt6.QtCore import pyqtSlot, QAbstractListModel, Qt
+
 import os, time
+from copy import deepcopy
 
 from plotterHandler import plotterAttributes, chiplotlePlotter, serialPlotter, plotterJog
 
@@ -121,18 +124,22 @@ class mainWindow(QtWidgets.QMainWindow):
             QtWidgets.QPushButton, 'button_dryRun')
         self.button_dryRun.clicked.connect(self.dryRun)
 
-        ## Multiplot Configuration
-        ### listWidget
-        #self.plotList = self.findChild(
-        #    QtWidgets.QListWidget, 'listWidget_plotList')
+        # Multiplot Configuration
+        ## listWidget
+        self.elementModel = multiPlotModel()
+        self.listView_multiPlot = self.findChild(
+            QtWidgets.QListView, 'listView_multiPlot')
+        self.listView_multiPlot.setModel(self.elementModel)
 
-        ### Buttons
-        #self.addPlot = self.findChild(
-        #    QtWidgets.QPushButton, 'button_addListItem')
-        #self.addPlot.clicked.connect()
+        ## Element Selection comboBox
+        self.comboBox_selectElement.addItems(plotterAttributes.elementList)
+        self.comboBox_selectElement.setCurrentIndex(0)
+        self.comboBox_selectElement.currentTextChanged.connect(self.selectElement)
+
+        ## Buttons
+        self.button_addElement.clicked.connect(self.addElement)
         
-        #self.delPlot = self.findChild(
-        #    QtWidgets.QPushButton, 'button_delListItem')
+        self.button_delElement.clicked.connect(self.delElement)
 
     # Function definitions
 
@@ -151,10 +158,59 @@ class mainWindow(QtWidgets.QMainWindow):
         self.comboBox_activePen.addItems(plotterAttributes.penConfig.keys())
 
     ### Multiplot Config Windows
+    ## MultiPlot functions
+    
+    def selectElement(self):
+        self.selectedElement = plotterAttributes.elementList[self.comboBox_selectElement.currentIndex()]
+        #self.elementType = plotterAttributes.elementList[self.selectedElement]
 
-    def addHPGL(self):
-        dialogWindow = addHPGLWindow()
-        dialogWindow.exec()
+    def addElement(self):
+
+        if self.comboBox_selectElement.currentText() == 'HPGL Plot':
+            dialogWindow = addHPGLWindow()
+            if dialogWindow.exec():
+                HPGLelement = dialogWindow.element
+                self.elementModel.elements.append(HPGLelement)
+                self.elementModel.layoutChanged.emit()
+
+        elif self.comboBox_selectElement.currentText() == 'Wait':
+            dialogWindow = addWaitWindow()
+            if dialogWindow.exec():
+                waitElement = dialogWindow.element
+                self.elementModel.elements.append(waitElement)
+                self.elementModel.layoutChanged.emit()
+
+        elif self.comboBox_selectElement.currentText() == 'Pause':
+            dialogWindow = addPauseWindow()
+            if dialogWindow.exec():
+                pauseElement = dialogWindow.element
+                self.elementModel.elements.append(pauseElement)
+                self.elementModel.layoutChanged.emit()
+
+        elif self.comboBox_selectElement.currentText() == 'Page Feed':
+            dialogWindow = addPageFeedWindow()
+            if dialogWindow.exec():
+                pageFeedElement = dialogWindow.element
+                self.elementModel.elements.append(pageFeedElement)
+                self.elementModel.layoutChanged.emit()
+
+        elif self.comboBox_selectElement.currentText() == 'Repeat':
+            dialogWindow = addRepeatWindow()
+            if dialogWindow.exec():
+                repeatElement = dialogWindow.element
+                self.elementModel.elements.append(repeatElement)
+                self.elementModel.layoutChanged.emit()
+
+        else:
+            print("Not implemented yet! :,(")
+
+    def delElement(self):
+        indexes = self.listView_multiPlot.selectedIndexes()
+        if indexes:
+            index = indexes[0]
+            del self.elementModel.elements[index.row()]
+            self.elementModel.layoutChanged.emit()
+            self.listView_multiPlot.clearSelection()
 
     ## Active pen control
     def changeActivePen(self):
@@ -807,6 +863,43 @@ class penConfigWindow(QtWidgets.QDialog):
         else:
             print('Plotter carousel value missed in penSetup if catch!')
             
+class multiPlotModel(QAbstractListModel):
+
+    def __init__(self, *args, elements=None, **kwargs):
+        super(multiPlotModel, self).__init__(*args, **kwargs)
+        self.elements = elements or []
+
+
+    def data(self, index, role):
+            
+            # Data Structure:
+            # status, type, name, info
+            # elementStatus - bool - element completed?
+            # elementType - str - the type of the element
+            # elementName - str - the name of the element
+            # info - dictIndex - entry containing step info
+
+        if role == Qt.ItemDataRole.BackgroundRole:
+
+            elementStatus, _, _, _ = self.elements[index.row()]
+            if elementStatus:
+                return QColor('green')
+            elif elementStatus:
+                return QColor('white')
+
+        if role == Qt.ItemDataRole.DisplayRole:
+
+            _, elementType, elementName, _ = self.elements[index.row()]
+            return elementType + ', ' + elementName
+        
+        if role == Qt.ItemDataRole.UserRole:
+
+            _, _, _, elementInfo = self.elements[index.row()]
+            return elementInfo
+        
+    def rowCount(self, index):
+        return len(self.elements)
+        
 # WIP 
 class addHPGLWindow(QtWidgets.QDialog):
 
@@ -814,33 +907,296 @@ class addHPGLWindow(QtWidgets.QDialog):
 
     def __init__(self):
         super(addHPGLWindow, self).__init__()
-        uic.loadUi('windows/addHPGL.ui', self)
+        uic.loadUi('windows/addHPGLElement.ui', self)
         self.show()
 
+        # Setup local pen dictionary
+        self.localPenConfig = deepcopy(plotterAttributes.penConfig)
+        self.selectedPen = deepcopy(plotterAttributes.selectedPen)
+        print('localPenConfig: {}'.format(self.localPenConfig))
+
+        # Setup return element variable
+        self.hpglString_chiplotle = None
+        self.element = None
+
+        # Add escape method
+        #self.accepted.connect(self.returnInfo())
+        self.buttonBox_okCancel.accepted.connect(self.returnInfo)
+        self.buttonBox_okCancel.rejected.connect(self.reject)
 
         # Setup window elements
+        self.button_fileBrowse.clicked.connect(self.importHPGL)
+        self.text_fileBrowse.setText('No File Selected')
 
-        button_importHPGL = self.findChild(
-            QtWidgets.QPushButton, 'button_fileBrowse')
-        button_importHPGL.clicked.connect(self.importHPGL)
+        self.comboBox_pen.currentTextChanged.connect(self.selectPen)
+        self.comboBox_pen.setCurrentText(self.selectedPen)
 
-        label_fileName = self.findChild(
-            QtWidgets.QLineEdit, 'text_fileName')
+        self.checkBox_penOverride.setChecked(False)
+        self.checkBox_penOverride.stateChanged.connect(self.penOverride)
+
+        # Setup pen selection
+        self.comboBox_pen.currentTextChanged.connect(self.selectPen)
+        self.comboBox_pen.setCurrentText(self.selectedPen)
+
+        self.button_pickColor.clicked.connect(self.openColorDialog)
+        self.button_pickColor.setDisabled(True)
+
+        # Set the spinBox values and initially disable them
+        self.spinBox_penAcceleration.setValue(self.localPenConfig[self.selectedPen]['acceleration'])
+        self.spinBox_penAcceleration.setDisabled(True)
+        self.spinBox_penAcceleration.textChanged.connect(self.penAccelChanged)
+
+        self.spinBox_penVelocity.setValue(self.localPenConfig[self.selectedPen]['velocity'])
+        self.spinBox_penVelocity.setDisabled(True)
+        self.spinBox_penVelocity.textChanged.connect(self.penVeloChanged)
+
+        self.spinBox_penForce.setValue(self.localPenConfig[self.selectedPen]['force'])
+        self.spinBox_penForce.setDisabled(True)
+        self.spinBox_penForce.textChanged.connect(self.penForceChanged)
+
+        self.doubleSpinBox_penThickness.setValue(self.localPenConfig[self.selectedPen]['thickness'])
+        self.doubleSpinBox_penThickness.setDisabled(True)
+        self.doubleSpinBox_penThickness.textChanged.connect(self.penThickChanged)
+
+        if self.comboBox_pen.currentText() != '':
+            self.selectedPen = self.comboBox_pen.currentText()
+        else:
+            pass
+
+        self.selectPen()
+
+        # Add the pens to the comboBox
+        self.penKeyList = list(self.localPenConfig.keys())
+        self.comboBox_pen.addItems(self.penKeyList)
+
+
+    ## Spinbox value change handling
+    def penAccelChanged(self):
+        self.localPenConfig[self.selectedPen]['acceleration'] = self.spinBox_penAcceleration.value()
+
+    def penVeloChanged(self):
+        self.localPenConfig[self.selectedPen]['velocity'] = self.spinBox_penVelocity.value()
+
+    def penForceChanged(self):
+        self.localPenConfig[self.selectedPen]['force'] = self.spinBox_penForce.value()
+
+    def penThickChanged(self):
+        self.localPenConfig[self.selectedPen]['thickness'] = self.doubleSpinBox_penThickness.value()
+
+    def selectPen(self):
+        '''
+        Change the values in the menu to the values within the local dictionary
+        '''
+        # Get currently selected pen string value
+        if self.comboBox_pen.currentText() != '':
+            self.selectedPen = self.comboBox_pen.currentText()
+            self.localPenConfig[self.selectedPen]['penNumber'] = self.comboBox_pen.currentIndex() + 1
+        else:
+            pass
+
+        self.changeColor()
+
+        # Set the spinBox values
+        self.spinBox_penAcceleration.setValue(self.localPenConfig[self.selectedPen]['acceleration'])
+        self.spinBox_penVelocity.setValue(self.localPenConfig[self.selectedPen]['velocity'])
+        self.spinBox_penForce.setValue(self.localPenConfig[self.selectedPen]['force'])
+        self.doubleSpinBox_penThickness.setValue(self.localPenConfig[self.selectedPen]['thickness'])
+
+    def openColorDialog(self):
+        colorValue = QColorDialog.getColor()
+
+        if colorValue.isValid():
+            print(colorValue)
+            self.localPenConfig[self.selectedPen]['color'] = colorValue
+            self.changeColor()
+
+    def changeColor(self):
+        '''penConfig
+        Select and apply the color to the pen in the localPenConfig dictionary.
+        '''
+        # New attempt:
+        self.text_color.setStyleSheet("background-color: {}".format(self.localPenConfig[self.selectedPen]['color'].name()))
 
     def importHPGL(self):
         self.hpgl_fileLocation = QFileDialog.getOpenFileName(self, 'Open file')[0]
         print(self.hpgl_fileLocation)
-
+        
         if self.hpgl_fileLocation != None and os.path.splitext(self.hpgl_fileLocation)[1] == '.hpgl':
 
-            if plotterAttributes.serialBackend == 'Chiplotle':
-                self.hpglString_chiplotle = import_hpgl_file(self.hpgl_fileLocation)
-                print('HPGL Command String length: ' + str(len(self.hpglString_chiplotle)))
 
-                
+            self.hpglString_chiplotle = import_hpgl_file(self.hpgl_fileLocation)
+            print('HPGL Command String length: ' + str(len(self.hpglString_chiplotle)))
+            self.text_fileBrowse.setText('HPGL File Selected: {}'.format(os.path.split(self.hpgl_fileLocation)[1]))
+
+            # TODO Left in place for the eventual PySerial port.    
+            #if plotterAttributes.serialBackend == 'Chiplotle':
+            #    self.hpglString_chiplotle = import_hpgl_file(self.hpgl_fileLocation)
+            #    print('HPGL Command String length: ' + str(len(self.hpglString_chiplotle)))
+            #    self.text_fileBrowse.setText('HPGL File Selected: {}'.format(os.path.split(self.hpgl_fileLocation)[1]))
+
+        elif self.hpgl_fileLocation == None or os.path.splitext(self.hpgl_fileLocation)[1] != '.hpgl':
+            self.text_fileBrowse.setText('Invalid HPGL file selected!')
+
+
     def changeFileName(self):
         try:
             self.label_fileName.setText(os.path.split(self.hpgl_fileLocation)[1])
         except:
             print(self.hpgl_fileLocation)
             self.label_fileName.setText('None')
+
+    def penOverride(self):
+        if not self.checkBox_penOverride.isChecked():
+            self.button_pickColor.setDisabled(True)
+            self.spinBox_penAcceleration.setDisabled(True)
+            self.spinBox_penVelocity.setDisabled(True)
+            self.spinBox_penForce.setDisabled(True)
+            self.doubleSpinBox_penThickness.setDisabled(True)
+            self.localPenConfig = deepcopy(plotterAttributes.penConfig)
+            self.selectPen()
+        
+        if self.checkBox_penOverride.isChecked():
+            self.button_pickColor.setDisabled(False)
+            self.spinBox_penAcceleration.setDisabled(False)
+            self.spinBox_penVelocity.setDisabled(False)
+            self.spinBox_penForce.setDisabled(False)
+            self.doubleSpinBox_penThickness.setDisabled(False)
+            
+
+    def returnInfo(self):
+
+        if self.hpglString_chiplotle == None:
+            print('Rejected!')
+            self.reject()
+
+        else:
+            info = {
+                'HPGL Plot':{
+                    'file': self.hpgl_fileLocation,
+                    'chiplotleHPGL':self.hpglString_chiplotle,
+                    'penConfig':{
+                        'enabled':True,
+                        'penNumber':self.localPenConfig[self.selectedPen]['penNumber'],
+                        'color':self.localPenConfig[self.selectedPen]['color'],
+                        'acceleration':self.localPenConfig[self.selectedPen]['acceleration'],
+                        'velocity':self.localPenConfig[self.selectedPen]['velocity'],
+                        'force':self.localPenConfig[self.selectedPen]['force'],
+                        'thickness':self.localPenConfig[self.selectedPen]['thickness'],
+                        'linetype':self.localPenConfig[self.selectedPen]['linetype']
+                    }
+                }
+            }
+            
+            self.element = (False, 'HPGL Plot', os.path.split(self.hpgl_fileLocation)[1], info)
+            print('Accpeted!')
+            self.accept()
+
+class addWaitWindow(QtWidgets.QDialog):
+
+    def __init__(self):
+        super(addWaitWindow, self).__init__()
+        uic.loadUi('windows/addWaitElement.ui', self)
+        self.show()
+        
+        self.waitTime = plotterAttributes.elementTypes['Wait']['waitTime']
+
+        # Add escape method
+        self.buttonBox_okCancel.accepted.connect(self.returnInfo)
+        self.buttonBox_okCancel.rejected.connect(self.reject)
+
+        self.doubleSpinBox_waitTime.textChanged.connect(self.setWaitTime)
+
+    def setWaitTime(self):
+        self.waitTime = self.doubleSpinBox_waitTime.value()
+
+    def returnInfo(self):
+        self.element = (False,
+                        'Wait',
+                        '{} Seconds'.format(self.waitTime),
+                        {'waitTime':self.waitTime})
+        print('Accpeted!')
+        self.accept()
+
+class addPauseWindow(QtWidgets.QDialog):
+
+    def __init__(self):
+        super(addPauseWindow, self).__init__()
+        uic.loadUi('windows/addPauseElement.ui', self)
+        self.show()
+
+        self.message = plotterAttributes.elementTypes['Pause']['message']
+        self.parkPen = plotterAttributes.elementTypes['Pause']['parkPen']
+
+        # Add escape method
+        self.buttonBox_okCancel.accepted.connect(self.returnInfo)
+        self.buttonBox_okCancel.rejected.connect(self.reject)
+
+        self.lineEdit_message.setText(self.message)
+        self.checkBox_parkPen.setChecked(self.parkPen)
+
+    def returnInfo(self):
+        self.element = (False,
+                        'Pause',
+                        'Pen Park: {}'.format(self.parkPen),
+                        {'message': self.lineEdit_message.text(),
+                         'parkPen': self.checkBox_parkPen.isChecked()})
+        print('Accpeted!')
+        self.accept()
+
+class addPageFeedWindow(QtWidgets.QDialog):
+
+    def __init__(self):
+        super(addPageFeedWindow, self).__init__()
+        uic.loadUi('windows/addPageFeedElement.ui', self)
+        self.show()
+
+        self.message = plotterAttributes.elementTypes['Page Feed']['message']
+
+        # Add escape method
+        self.buttonBox_okCancel.accepted.connect(self.returnInfo)
+        self.buttonBox_okCancel.rejected.connect(self.reject)
+
+        self.label_message.setText(self.message)
+
+    def returnInfo(self):
+        self.element = (False,
+                        'Page Feed',
+                        '☞',
+                        {})
+        print('Accpeted!')
+        self.accept()
+
+class addRepeatWindow(QtWidgets.QDialog):
+
+    def __init__(self):
+        super(addRepeatWindow, self).__init__()
+        uic.loadUi('windows/addRepeatElement.ui', self)
+        self.show()
+
+        self.message = plotterAttributes.elementTypes['Repeat']['message']
+        self.repeatCount = plotterAttributes.elementTypes['Repeat']['count']
+        self.remaining = plotterAttributes.elementTypes['Repeat']['remaining']
+
+        # Add escape method
+        self.buttonBox_okCancel.accepted.connect(self.returnInfo)
+        self.buttonBox_okCancel.rejected.connect(self.reject)
+
+        self.label_message.setText(self.message)
+
+        self.spinBox_count.setValue(self.repeatCount)
+        self.spinBox_count.textChanged.connect(self.updateCount)
+
+    def updateCount(self):
+        self.repeatCount = self.spinBox_count.value()
+        self.remaining = self.spinBox_count.value()
+
+    def returnInfo(self):
+        self.element = (False,
+                        'Repeat',
+                        '{0}/{1} Plots Remain'.format(self.remaining, self.repeatCount),
+                        {
+                            'count':self.repeatCount,
+                            'remaining':self.remaining
+                        })
+        print('Accpeted!')
+        self.accept()

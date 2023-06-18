@@ -93,6 +93,44 @@ class plotterAttributes():
     selectedPen = 'Pen 1'
     activePen = 'Pen 1'
 
+    elementTypes = {
+        'HPGL Plot':{
+            'file':'',
+            'chiplotleHPGL':None,
+            'penConfig':penConfig[selectedPen],
+        },
+
+        'Wait':{
+            'waitTime':1,
+        },
+        
+        'Pause':{
+            'message':'Paused, press OK to resume plot',
+            'parkPen':False
+        },
+
+        'Page Feed':{
+            'message':
+                'Be warned, this command has varying effects depending' + 
+                'on the plotter being used. The original intent was to '+ 
+                'automate mass plotting using the HP 7550A\'s ' +
+                'autofeeding mechanism.\n\nSelect OK to add the element.'
+        },
+
+        'Chime': {
+            'sound':''
+        },
+        'Repeat':{
+            'message':
+                'The repeat function will reset the completed statuses' + 
+                'of the previous elements and restart the sequence at' + 
+                ' the beginning. ',
+            'count':1,
+            'remaining':1
+        }
+    }
+    
+    elementList = [x for x in elementTypes.keys()]
     # This list is to handle special plotters that have carousels but do
     # not support the OT command and auto pen detection.
     # The 7440A is the only one I am currently aware of that is like this.
