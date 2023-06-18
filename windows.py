@@ -658,6 +658,7 @@ class penConfigWindow(QtWidgets.QDialog):
         # Get currently selected pen string value
         if self.comboBox_pen.currentText() != '':
             plotterAttributes.selectedPen = self.comboBox_pen.currentText()
+            plotterAttributes.penConfig[plotterAttributes.selectedPen]['penNumber'] = self.comboBox_pen.currentIndex() + 1
         else:
             pass
 
