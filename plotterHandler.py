@@ -131,6 +131,7 @@ class plotterAttributes():
     }
     
     elementList = [x for x in elementTypes.keys()]
+
     # This list is to handle special plotters that have carousels but do
     # not support the OT command and auto pen detection.
     # The 7440A is the only one I am currently aware of that is like this.

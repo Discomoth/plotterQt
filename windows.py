@@ -4,7 +4,6 @@ from PyQt6 import QtWidgets, uic
 from PyQt6.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QProgressDialog, QColorDialog
 from PyQt6.QtGui import QAction, QIcon, QColor, QPalette
 from PyQt6.QtTest import QTest
-from PyQt6.QtCore import pyqtSlot
 from PyQt6.QtCore import pyqtSlot, QAbstractListModel, Qt
 
 import os, time
@@ -34,94 +33,76 @@ class mainWindow(QtWidgets.QMainWindow):
         # Action bar configuration
 
         ## File tab
-        self.action_importHPGL = self.findChild(
-            QAction, 'action_importHPGL')
+        #self.action_importHPGL = self.findChild(QAction, 'action_importHPGL')
         self.action_importHPGL.triggered.connect(self.importHPGL)
 
         ## Config tab
-        self.action_plotterConfig = self.findChild(
-            QAction, 'action_plotterConfig')
+        #self.action_plotterConfig = self.findChild(QAction, 'action_plotterConfig')
         self.action_plotterConfig.triggered.connect(self.plotterConfig)
 
-        self.action_penConfig = self.findChild(
-            QAction, 'action_penConfig')
+        #self.action_penConfig = self.findChild(QAction, 'action_penConfig')
         self.action_penConfig.triggered.connect(self.penConfig)
 
         # Graphics view initialization
-        self.graphicsWindow = self.findChild(
-            QtWidgets.QGraphicsView, 'graphicsView')
+        self.graphicsWindow = self.findChild(QtWidgets.QGraphicsView, 'graphicsView')
 
         # Control button configuration
-        self.spinBox_jogDistance = self.findChild(
-            QtWidgets.QSpinBox,'spinBox_jogDistance')
+        #self.spinBox_jogDistance = self.findChild(QtWidgets.QSpinBox,'spinBox_jogDistance')
         self.spinBox_jogDistance.setValue(plotterAttributes.jogDistance)
         self.spinBox_jogDistance.textChanged.connect(self.jogDistanceChange)
 
         ## Active Pen comboBox
-        self.comboBox_activePen = self.findChild(
-            QtWidgets.QComboBox, 'comboBox_activePen')
+        #self.comboBox_activePen = self.findChild(QtWidgets.QComboBox, 'comboBox_activePen')
         self.comboBox_activePen.addItems(plotterAttributes.penConfig.keys())
         self.comboBox_activePen.setCurrentIndex(0)
         self.comboBox_activePen.currentTextChanged.connect(self.changeActivePen)
 
         ## Home Button
-        self.button_home = self.findChild(
-            QtWidgets.QPushButton, 'button_home')
+        #self.button_home = self.findChild(QtWidgets.QPushButton, 'button_home')
         self.button_home.clicked.connect(self.home)
 
         ## Jog up button
-        self.button_jogUp = self.findChild(
-            QtWidgets.QPushButton, 'button_up')
+        self.button_jogUp = self.findChild(QtWidgets.QPushButton, 'button_up')
         self.button_jogUp.clicked.connect(self.jogUp)
 
         ## Jog down button
-        self.button_jogDown = self.findChild(
-            QtWidgets.QPushButton, 'button_down')
+        self.button_jogDown = self.findChild(QtWidgets.QPushButton, 'button_down')
         self.button_jogDown.clicked.connect(self.jogDown)
 
         ## Jog right button
-        self.button_jogRight = self.findChild(
-            QtWidgets.QPushButton, 'button_right')
+        self.button_jogRight = self.findChild(QtWidgets.QPushButton, 'button_right')
         self.button_jogRight.clicked.connect(self.jogRight)
 
         ## Jog left button
-        self.button_jogLeft = self.findChild(
-            QtWidgets.QPushButton, 'button_left')
+        self.button_jogLeft = self.findChild(QtWidgets.QPushButton, 'button_left')
         self.button_jogLeft.clicked.connect(self.jogLeft)
 
         ## Top right button
-        self.button_topRight = self.findChild(
-            QtWidgets.QPushButton, 'button_topRight')
+        #self.button_topRight = self.findChild(QtWidgets.QPushButton, 'button_topRight')
         self.button_topRight.clicked.connect(self.topRight)
 
         ## Top left button
-        self.button_toplLeft = self.findChild(
-            QtWidgets.QPushButton, 'button_topLeft')
-        self.button_toplLeft.clicked.connect(self.topLeft)
+        #self.button_topLeft = self.findChild(QtWidgets.QPushButton, 'button_topLeft')
+        self.button_topLeft.clicked.connect(self.topLeft)
 
         ## Bottom left button
-        self.button_bottomLeft = self.findChild(
-            QtWidgets.QPushButton, 'button_bottomLeft')
+        #self.button_bottomLeft = self.findChild(QtWidgets.QPushButton, 'button_bottomLeft')
         self.button_bottomLeft.clicked.connect(self.bottomLeft)
 
         ## Bottom right button
-        self.button_bottomRight = self.findChild(
-            QtWidgets.QPushButton, 'button_bottomRight')
+        #self.button_bottomRight = self.findChild(QtWidgets.QPushButton, 'button_bottomRight')
         self.button_bottomRight.clicked.connect(self.bottomRight)
 
         ## Start plot button
-        self.button_startPlot = self.findChild(
-            QtWidgets.QPushButton, 'button_startPlot')
+        #self.button_startPlot = self.findChild(QtWidgets.QPushButton, 'button_startPlot')
         self.button_startPlot.clicked.connect(self.startPlot)
 
         ## Stop plot button
-        self.button_stopPlot = self.findChild(
-            QtWidgets.QPushButton, 'button_stopPlot')
+        #self.button_stopPlot = self.findChild(QtWidgets.QPushButton, 'button_stopPlot')
         self.button_stopPlot.clicked.connect(self.stopPlot)
 
         ## Dry run button
-        self.button_dryRun = self.findChild(
-            QtWidgets.QPushButton, 'button_dryRun')
+        #self.button_dryRun = self.findChild(QtWidgets.QPushButton, 'button_dryRun')
         self.button_dryRun.clicked.connect(self.dryRun)
 
         # Multiplot Configuration
