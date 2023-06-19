@@ -57,9 +57,9 @@ class plotterAttributes():
     timeout = 0
     handshaking = ''
     xonxoff = False
-    rtscts = True
+    rtscts = False
     dsrdtr = False
-    noFlowCtrl = False
+    noFlowCtrl = True
     flowDelay = 0.015
     jogDistance = 100
 
@@ -73,10 +73,14 @@ class plotterAttributes():
             'color':QColor.fromRgb(0x000000),
             'acceleration':1,
             'velocity':15,
-            'force':4,
+            'force':2,
             'thickness':0.3,
             'linetype':0
         }
+    }
+
+    penConfigMask = {
+        'Pen 1':True
     }
 
     defaultColors = [

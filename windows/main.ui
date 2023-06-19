@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>HPGLPlotter</string>
+   <string>plotterQt</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_2">
@@ -463,27 +463,30 @@
        <widget class="QWidget" name="gridLayoutWidget">
         <property name="geometry">
          <rect>
-          <x>150</x>
-          <y>630</y>
-          <width>136</width>
-          <height>31</height>
+          <x>0</x>
+          <y>600</y>
+          <width>291</width>
+          <height>58</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_5">
-         <item row="0" column="1">
-          <widget class="QPushButton" name="button_addElement">
+         <item row="1" column="0">
+          <widget class="QPushButton" name="button_resetFlags">
            <property name="maximumSize">
             <size>
-             <width>25</width>
+             <width>75</width>
              <height>25</height>
             </size>
            </property>
+           <property name="toolTip">
+            <string>Resets the stopFlag and the element complete coloration</string>
+           </property>
            <property name="text">
-            <string>+</string>
+            <string>Reset Flags</string>
            </property>
           </widget>
          </item>
-         <item row="0" column="2">
+         <item row="1" column="3">
           <widget class="QPushButton" name="button_delElement">
            <property name="maximumSize">
             <size>
@@ -496,8 +499,37 @@
            </property>
           </widget>
          </item>
-         <item row="0" column="0">
+         <item row="1" column="1">
           <widget class="QComboBox" name="comboBox_selectElement"/>
+         </item>
+         <item row="1" column="2">
+          <widget class="QPushButton" name="button_addElement">
+           <property name="maximumSize">
+            <size>
+             <width>25</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>+</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QPushButton" name="button_startPlot2">
+           <property name="maximumSize">
+            <size>
+             <width>100</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Resets the stopFlag and the element complete coloration</string>
+           </property>
+           <property name="text">
+            <string>Start Plotting</string>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -507,8 +539,41 @@
           <x>0</x>
           <y>0</y>
           <width>291</width>
-          <height>631</height>
+          <height>591</height>
          </rect>
+        </property>
+        <property name="acceptDrops">
+         <bool>true</bool>
+        </property>
+        <property name="dragEnabled">
+         <bool>true</bool>
+        </property>
+        <property name="dragDropOverwriteMode">
+         <bool>false</bool>
+        </property>
+        <property name="dragDropMode">
+         <enum>QAbstractItemView::DropOnly</enum>
+        </property>
+        <property name="defaultDropAction">
+         <enum>Qt::CopyAction</enum>
+        </property>
+        <property name="alternatingRowColors">
+         <bool>false</bool>
+        </property>
+        <property name="selectionMode">
+         <enum>QAbstractItemView::SingleSelection</enum>
+        </property>
+        <property name="selectionBehavior">
+         <enum>QAbstractItemView::SelectItems</enum>
+        </property>
+        <property name="movement">
+         <enum>QListView::Static</enum>
+        </property>
+        <property name="resizeMode">
+         <enum>QListView::Fixed</enum>
+        </property>
+        <property name="selectionRectVisible">
+         <bool>true</bool>
         </property>
        </widget>
       </widget>

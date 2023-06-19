@@ -1,10 +1,10 @@
 
 
 from PyQt6 import QtWidgets, uic
-from PyQt6.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QProgressDialog, QColorDialog
+from PyQt6.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QProgressDialog, QColorDialog, QListView, QAbstractItemView
 from PyQt6.QtGui import QAction, QIcon, QColor, QPalette
 from PyQt6.QtTest import QTest
-from PyQt6.QtCore import pyqtSlot, QAbstractListModel, Qt
+from PyQt6.QtCore import pyqtSlot, QAbstractListModel, Qt, QThread, QObject, pyqtSignal
 
 import os, time
 from copy import deepcopy
@@ -97,9 +97,10 @@ class mainWindow(QtWidgets.QMainWindow):
         #self.button_startPlot = self.findChild(QtWidgets.QPushButton, 'button_startPlot')
         self.button_startPlot.clicked.connect(self.startPlot)
 
-        ## Stop plot button
+        ## Stop plot button/stopFlag creation
         #self.button_stopPlot = self.findChild(QtWidgets.QPushButton, 'button_stopPlot')
         self.button_stopPlot.clicked.connect(self.stopPlot)
+        self.stopFlag = False
 
         ## Dry run button
         #self.button_dryRun = self.findChild(QtWidgets.QPushButton, 'button_dryRun')
@@ -110,7 +111,15 @@ class mainWindow(QtWidgets.QMainWindow):
         self.elementModel = multiPlotModel()
         self.listView_multiPlot = self.findChild(
             QtWidgets.QListView, 'listView_multiPlot')
+        
+
         self.listView_multiPlot.setModel(self.elementModel)
+        #self.listView_multiPlot.setMovement(QListView.Movement.Free)
+        #self.listView_multiPlot.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+        # TODO
+        # Add drag and drop functionality. It is implemented using the 
+        # item flags. Need to find out how to implement those...
+        # The flag attribute is under QModelIndexes
 
         ## Element Selection comboBox
         self.comboBox_selectElement.addItems(plotterAttributes.elementList)
@@ -119,8 +128,12 @@ class mainWindow(QtWidgets.QMainWindow):
 
         ## Buttons
         self.button_addElement.clicked.connect(self.addElement)
-        
         self.button_delElement.clicked.connect(self.delElement)
+        self.button_resetFlags.clicked.connect(self.flagResetButton)
+        self.button_startPlot2.clicked.connect(self.startPlot)
+
+        self.plotterConfig()
+        self.penConfig()
 
     # Function definitions
 
@@ -188,10 +201,15 @@ class mainWindow(QtWidgets.QMainWindow):
     def delElement(self):
         indexes = self.listView_multiPlot.selectedIndexes()
         if indexes:
-            index = indexes[0]
-            del self.elementModel.elements[index.row()]
+            #index = indexes[0]
+            for index in indexes:
+                del self.elementModel.elements[index.row()]
             self.elementModel.layoutChanged.emit()
-            self.listView_multiPlot.clearSelection()
+            #self.listView_multiPlot.clearSelection()
+
+    def flagResetButton(self):
+        self.resetElementFlags(False)
+
 
     ## Active pen control
     def changeActivePen(self):
@@ -310,31 +328,187 @@ class mainWindow(QtWidgets.QMainWindow):
             self.progressMinimum,
             self.progressMaximum)
 
-
     def startPlot(self):
         '''
         Starts sending data to the plotter.
         Stop flag stops the plot when false.
+
+        # Data Structure(QModelIndex/multiplot elements):
+
+        # (status, type, name, info)
+
+        # elementStatus - bool - element completed?
+        # elementType - str - the type of the element
+        # elementName - str - the name of the element
+        # info - dictIndex - entry containing step info
+
         '''
-        plotterAttributes.pen = plotterAttributes.activePen
 
-        setupCommands = [
-            commands.SP(plotterAttributes.penConfig[plotterAttributes.activePen]['penNumber']).format,
-            commands.VS(plotterAttributes.penConfig[plotterAttributes.activePen]['velocity']).format,
-            commands.AS(plotterAttributes.penConfig[plotterAttributes.activePen]['acceleration']).format,
-            commands.FS(plotterAttributes.penConfig[plotterAttributes.activePen]['force']).format
-        ]
+        if plotterAttributes.plotter == None:
+            print("Plotter not initialized!")
 
-        if len(self.hpglString_chiplotle) != 0:
-            for command in setupCommands:
-                plotterAttributes.plotter.write(command)
-                time.sleep(1.5)
-            
-            plotterAttributes.plotter.write(self.hpglString_chiplotle)
-        elif len(self.hpglString_chiplotle) == 0:
+        self.multiPlotRepeatCount = None
+        self.multiPlotRepeatRemainder = None
+
+        # Multiplot handling
+        if self.elementModel.rowCount() > 0:
+
+            while True:
+                if self.stopFlag:
+                    break
+
+                for elementIndex, element in enumerate(self.elementModel.elements):
+
+                    # Insert and if conditional to catch the stop flag and make the function return?
+                    # Completed plots will be skipped and incomplete ones will remain...
+                    # Do a layoutChanged.emit() at end of each iteration to update the listView?
+                    
+                    # Loop stopFlag break
+                    if self.stopFlag:
+                        break
+                    # Check if element has been completed already
+                    if element[0]:
+                        pass
+
+                    elif not element[0]:
+                        # Determine element type
+                        if element[1] == 'HPGL Plot':
+                            print('HPGL Element')
+
+                            penConfigs = element[3]['HPGL Plot']['penConfig']
+                            plotInfo = element[3]['HPGL Plot']['chiplotleHPGL']
+
+                            # Pen setup
+                            ## Get the pen info and make into list of chiplotle
+                            ## HPGL objects.
+                            setupCommands = [
+                                commands.SP(penConfigs['penNumber']),
+                                commands.VS(penConfigs['velocity']),
+                                commands.AS(penConfigs['acceleration']),
+                                commands.FS(penConfigs['force']),
+                            ]
+
+                            ## Iterate through the setup commands, writing to plotter
+                            for command in setupCommands:
+                                plotterAttributes.plotter.write(command)
+                                time.sleep(1)
+
+                            # Plot setup
+                            plotterAttributes.plotter.write(plotInfo)
+
+                        elif element[1] == 'Wait':
+                            print('Wait Element')
+                            waitTime = element[3]['Wait']['waitTime']
+
+                            time.sleep(waitTime)
+                            print('Waited: {} Seconds'.format(waitTime))
+
+                        elif element[1] == 'Pause':
+                            dialogWindow = pauseWindow()
+                            if dialogWindow.exec():
+                                print('Accepted!')
+                            else:
+                                print('Rejected - multiPlot sequence stopping')
+                                self.stopFlag = True
+
+                        elif element[1] == 'Page Feed':
+                            pageFeedCommand = commands.PG()
+                            plotterAttributes.plotter.write(pageFeedCommand)
+
+                        elif element[1] == 'Repeat':
+
+                            # If it appears this is the first repeat element encountered
+                            if self.multiPlotRepeatCount == None:
+                                self.multiPlotRepeatCount = element[3]['Repeat']['count']
+                                self.multiPlotRepeatRemainder = element[3]['Repeat']['remaining'] - 1
+
+                            # If it appears this is a cycle of the repeat
+                            elif self.multiPlotRepeatCount != None:
+                                print('Plots remaining: {}'.format(self.multiPlotRepeatRemainder) + '/{}'.format(self.multiPlotRepeatCount))
+                                pass
+
+                            else:
+                                print('Repeat Element parsing missed if catches')
+
+                        else:
+                            print('Unknown multiPlot Element entry in startPlot command')
+
+                        # To indicate plotting complete, the first item in the element
+                        # tuple, the elementStatus is changed to True to indicate it
+                        # has already been run.
+
+                        # Make a new tuple by adding a single item tuple to the front
+                        # of the value of the element in the elementModel.
+                        newTuple = tuple([True]) + self.elementModel.elements[elementIndex][1:]
+
+                        # Write the new tuple to the element.
+                        self.elementModel.elements[elementIndex] = newTuple
+                        self.elementModel.layoutChanged.emit()
+
+                if self.multiPlotRepeatRemainder == None:
+                    self.stopFlag = True
+                    
+                    # Reset the element completion states
+                    self.resetElementFlags(False)
+
+                elif not self.multiPlotRepeatRemainder <= 0:
+                    # Deincrement remaining plot value
+                    self.multiPlotRepeatRemainder -= 1
+
+                    # Reset flag states to allow repeat plot
+                    self.resetElementFlags(False)
+
+                elif self.multiPlotRepeatRemainder <= 0:
+                    self.stopFlag = True
+
+                else:
+                    print("Oops! Infinite loop in startPlot!")
+
+        # Old style of single plot handling - sort of outdated now...
+        elif self.elementModel.rowCount() > 0 and len(self.hpglString_chiplotle) != 0:
+
+            plotterAttributes.pen = plotterAttributes.activePen
+
+            setupCommands = [
+                commands.SP(plotterAttributes.penConfig[plotterAttributes.activePen]['penNumber']).format,
+                commands.VS(plotterAttributes.penConfig[plotterAttributes.activePen]['velocity']).format,
+                commands.AS(plotterAttributes.penConfig[plotterAttributes.activePen]['acceleration']).format,
+                commands.FS(plotterAttributes.penConfig[plotterAttributes.activePen]['force']).format
+            ]
+
+            if len(self.hpglString_chiplotle) != 0:
+                for command in setupCommands:
+                    plotterAttributes.plotter.write(command)
+                    time.sleep(1.5)
+                
+                plotterAttributes.plotter.write(self.hpglString_chiplotle)
+
+        elif self.elementModel.rowCount() > 0 and len(self.hpglString_chiplotle) == 0:
             print("No HPGL file loaded!")
 
+        # stopFlag reset
+        if self.stopFlag:
+            self.stopFlag = False
+
+    def multiPlot(self):
+        '''
+        Move multiplot stuff here someday?
+        '''
+
+    def resetElementFlags(self, flagState: bool):
+
+        for elementIndex, element in enumerate(self.elementModel.elements):
+            # Make a new tuple by adding a single item tuple to the front
+            # of the value of the element in the elementModel.
+            newTuple = tuple([flagState]) + self.elementModel.elements[elementIndex][1:]
+
+            # Write the new tuple to the element.
+            self.elementModel.elements[elementIndex] = newTuple
+        
+        self.elementModel.layoutChanged.emit()
+
     def stopPlot(self):
+        self.stopFlag = True
         raise NotImplementedError("Not implemented yet!")
 
     def dryRun(self):
@@ -342,6 +516,9 @@ class mainWindow(QtWidgets.QMainWindow):
         Starts sending data to the plotter.
         Stop flag stops the plot when True.
         '''
+
+        raise NotImplementedError("Not implemented yet!")
+    
         if len(self.hpglString_chiplotle) != 0:
             plotterAttributes.plotter.write(commands.SP(0))
             #plotterAttributes.plotter.write_file(self.hpgl_fileLocation)
@@ -412,6 +589,7 @@ class plotterConfigWindow(QtWidgets.QDialog):
 
         self.radio_none = self.findChild(
             QtWidgets.QRadioButton, 'radio_none')
+        self.radio_none.setChecked(plotterAttributes.noFlowCtrl)
 
         self.doubleSpin_flowDelay = self.findChild(
             QtWidgets.QDoubleSpinBox, 'doubleSpin_flowDelay')
@@ -580,6 +758,10 @@ class plotterConfigWindow(QtWidgets.QDialog):
             # Send initialize command to plotter
             plotterAttributes.plotter.write(commands.IN().format)
 
+            # Park current pen if applicable
+            if b'SP' in plotterAttributes.plotter.allowedHPGLCommands:
+                plotterAttributes.plotter.write(commands.SP(0))
+
         elif self.combo_serialBackend.currentText() == 'PySerial':
             raise NotImplementedError('The PySerial connect function has not been implemented yet!')
 
@@ -624,15 +806,21 @@ class penConfigWindow(QtWidgets.QDialog):
             QtWidgets.QDoubleSpinBox, 'doubleSpinBox_penThickness')
         self.doubleSpinBox_penThickness.textChanged.connect(self.penThickChanged)
 
-        if plotterAttributes.penConfigDone == False:
-            self.setupPens()
-            plotterAttributes.penConfigDone = True
-        else:
-            self.selectPen()
+        #if plotterAttributes.penConfigDone == False:
+        #    self.setupPens()
+        #    plotterAttributes.penConfigDone = True
+        #else:
+        #    self.selectPen()
+        self.selectPen()
         
         # Add the pens to the comboBox
+        self.comboBox_pen.clear()
         plotterAttributes.penKeyList = list(plotterAttributes.penConfig.keys())
         self.comboBox_pen.addItems(plotterAttributes.penKeyList)
+
+        # Mask disabled pens
+        for pos, key in enumerate(plotterAttributes.penKeyList):
+            self.comboBox_pen.model().item(pos).setEnabled(plotterAttributes.penConfig[key]['enabled'])
 
     # Functions
 
@@ -658,7 +846,7 @@ class penConfigWindow(QtWidgets.QDialog):
         # Get currently selected pen string value
         if self.comboBox_pen.currentText() != '':
             plotterAttributes.selectedPen = self.comboBox_pen.currentText()
-            plotterAttributes.penConfig[plotterAttributes.selectedPen]['penNumber'] = self.comboBox_pen.currentIndex() + 1
+            #plotterAttributes.penConfig[plotterAttributes.selectedPen]['penNumber'] = self.comboBox_pen.currentIndex() + 1
         else:
             pass
 
@@ -670,8 +858,16 @@ class penConfigWindow(QtWidgets.QDialog):
         self.spinBox_penForce.setValue(plotterAttributes.penConfig[plotterAttributes.selectedPen]['force'])
         self.doubleSpinBox_penThickness.setValue(plotterAttributes.penConfig[plotterAttributes.selectedPen]['thickness'])
 
-    def refreshPens():
-        print('Not implemented yet')
+    def refreshPens(self):
+        self.setupPens()
+        # Add the pens to the comboBox
+        self.comboBox_pen.clear()
+        plotterAttributes.penKeyList = list(plotterAttributes.penConfig.keys())
+        self.comboBox_pen.addItems(plotterAttributes.penKeyList)
+
+        # Mask disabled pens
+        for pos, key in enumerate(plotterAttributes.penKeyList):
+            self.comboBox_pen.model().item(pos).setEnabled(plotterAttributes.penConfig[key]['enabled'])
 
     def changeColor(self):
         '''
@@ -734,6 +930,9 @@ class penConfigWindow(QtWidgets.QDialog):
             plotterID = plotterAttributes.plotter.id
 
             # See if plotter supports OT command (7575A/7576A/7550A, etc.)
+            if b'SP' in plotterAttributes.plotter.allowedHPGLCommands:
+                plotterAttributes.plotter.write(commands.SP(0))
+
             reply = plotterAttributes.plotter.carousel_type
 
             if b'OT' in plotterAttributes.plotter.allowedHPGLCommands:
@@ -817,7 +1016,7 @@ class penConfigWindow(QtWidgets.QDialog):
             # Clear the pen config dictionary
             plotterAttributes.penConfig.clear()
 
-            # Prep the dictionary - In this case, all the pens are marked as pen 1
+            # Prep the dictionary
             for index, number in enumerate([number + 1 for number in range(8)]):
                 plotterAttributes.penConfig['Pen ' + str(number)] = {
                     'enabled':True,
@@ -836,7 +1035,7 @@ class penConfigWindow(QtWidgets.QDialog):
                     plotterAttributes.penConfig[penKey]['enabled'] = True
                 elif bitState == '0':
                     plotterAttributes.penConfig[penKey]['enabled'] = False
-                    plotterAttributes.penConfig.pop(penKey)
+                    #plotterAttributes.penConfig.pop(penKey)
                 else:
                     print('Index error! Too many bitstates parsed!!')
                     print('penMap: {}'.format(plotterAttributes.penMap))
@@ -851,11 +1050,10 @@ class multiPlotModel(QAbstractListModel):
         super(multiPlotModel, self).__init__(*args, **kwargs)
         self.elements = elements or []
 
-
     def data(self, index, role):
             
             # Data Structure:
-            # status, type, name, info
+            # (status, type, name, info)
             # elementStatus - bool - element completed?
             # elementType - str - the type of the element
             # elementName - str - the name of the element
@@ -864,6 +1062,7 @@ class multiPlotModel(QAbstractListModel):
         if role == Qt.ItemDataRole.BackgroundRole:
 
             elementStatus, _, _, _ = self.elements[index.row()]
+
             if elementStatus:
                 return QColor('green')
             elif elementStatus:
@@ -879,10 +1078,9 @@ class multiPlotModel(QAbstractListModel):
             _, _, _, elementInfo = self.elements[index.row()]
             return elementInfo
         
-    def rowCount(self, index):
+    def rowCount(self, index=0):
         return len(self.elements)
         
-# WIP 
 class addHPGLWindow(QtWidgets.QDialog):
 
     hpgl_fileLocation = None
@@ -948,9 +1146,13 @@ class addHPGLWindow(QtWidgets.QDialog):
         self.selectPen()
 
         # Add the pens to the comboBox
+        self.comboBox_pen.clear()
         self.penKeyList = list(self.localPenConfig.keys())
         self.comboBox_pen.addItems(self.penKeyList)
-
+        
+        # Mask disabled pens
+        for pos, key in enumerate(self.penKeyList):
+            self.comboBox_pen.model().item(pos).setEnabled(self.localPenConfig[key]['enabled'])
 
     ## Spinbox value change handling
     def penAccelChanged(self):
@@ -972,7 +1174,7 @@ class addHPGLWindow(QtWidgets.QDialog):
         # Get currently selected pen string value
         if self.comboBox_pen.currentText() != '':
             self.selectedPen = self.comboBox_pen.currentText()
-            self.localPenConfig[self.selectedPen]['penNumber'] = self.comboBox_pen.currentIndex() + 1
+            #self.localPenConfig[self.selectedPen]['penNumber'] = self.comboBox_pen.currentIndex() + 1
         else:
             pass
 
@@ -1095,7 +1297,9 @@ class addWaitWindow(QtWidgets.QDialog):
         self.element = (False,
                         'Wait',
                         '{} Seconds'.format(self.waitTime),
-                        {'waitTime':self.waitTime})
+                        {'Wait':{
+                            'waitTime':self.waitTime}
+                        })
         print('Accpeted!')
         self.accept()
 
@@ -1120,10 +1324,36 @@ class addPauseWindow(QtWidgets.QDialog):
         self.element = (False,
                         'Pause',
                         'Pen Park: {}'.format(self.parkPen),
-                        {'message': self.lineEdit_message.text(),
-                         'parkPen': self.checkBox_parkPen.isChecked()})
+                        {'Pause':
+                         {'message': self.lineEdit_message.text(),
+                         'parkPen': self.checkBox_parkPen.isChecked()}
+                         })
         print('Accpeted!')
         self.accept()
+
+class pauseWindow(QtWidgets.QDialog):
+
+    def __init__(self):
+        super(pauseWindow, self).__init__()
+        uic.loadUi('windows/plotPaused.ui', self)
+        self.show()
+
+        self.message = plotterAttributes.elementTypes['Pause']['message']
+
+        self.lineEdit_message = self.findChild(
+            QtWidgets.QLineEdit, 'lineEdit_message')
+        self.lineEdit_message.setText(self.message)
+
+        self.buttonBox_okCancel.accepted.connect(self.returnInfoAccept)
+        self.buttonBox_okCancel.rejected.connect(self.returnInfoReject)
+
+    def returnInfoAccept(self):
+        #self.returnResult = True
+        self.accept()
+
+    def returnInfoReject(self):
+        #self.returnResult = False
+        self.reject()
 
 class addPageFeedWindow(QtWidgets.QDialog):
 
@@ -1144,7 +1374,7 @@ class addPageFeedWindow(QtWidgets.QDialog):
         self.element = (False,
                         'Page Feed',
                         '☞',
-                        {})
+                        {'Page Feed':''})
         print('Accpeted!')
         self.accept()
 
@@ -1176,9 +1406,43 @@ class addRepeatWindow(QtWidgets.QDialog):
         self.element = (False,
                         'Repeat',
                         '{0}/{1} Plots Remain'.format(self.remaining, self.repeatCount),
-                        {
-                            'count':self.repeatCount,
-                            'remaining':self.remaining
-                        })
+                        {'Repeat':
+                            {'count':self.repeatCount,
+                            'remaining':self.remaining}
+                            })
         print('Accpeted!')
         self.accept()
+
+# TODO WIP
+class plotThread(QObject):
+
+    finished = pyqtSignal()
+
+    def run(self, multiPlotElement, elementIndex):
+
+        penConfigs = multiPlotElement[3]['HPGL Plot']['penConfig']
+        plotInfo = multiPlotElement[3]['HPGL Plot']['chiplotleHPGL']
+
+        # Pen setup
+        ## Get the pen info and make into list of chiplotle
+        ## HPGL objects.
+        setupCommands = [
+            commands.SP(penConfigs['penNumber']),
+            commands.VS(penConfigs['velocity']),
+            commands.AS(penConfigs['acceleration']),
+            commands.FS(penConfigs['force']),
+        ]
+
+        ## Iterate through the setup commands, writing to plotter
+        for command in setupCommands:
+            plotterAttributes.plotter.write(command)
+            time.sleep(1)
+
+        # Plot setup
+        plotterAttributes.plotter.write(plotInfo)
+        self.elementModel.elements[elementIndex.row()].data[0] = True
+
+        # Exit thread
+        self.finished.emit()
+
+
