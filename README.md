@@ -6,6 +6,11 @@ If something does not work, do not be surprised! Nothing is in a polished state 
 
 The design of this program was inspired by K40Whisperer. I really appreciated the easy interface used to control a complex device. Being able to manually jog the laser for placement of the burn was something I felt could be implemented with old HPGL controled pen plotters. Eventually these features will be implemented in plotterQt. It is a bit more challenging than I imaginged.
 
+## Pretty important note
+From @Discomoth:
+
+Please make sure to log problems experienced with this program. This is a passion project but I want it to become something others can use to interact with pen plotters. I'll try and get to problem submissions, but please be patient. Include as much information as possible and actively work with me to help in instances where I cannot replicate the problem myself.
+
 ## Installation
 **A word of warning to those using Windows:** This program was developed using a Linux operating system. Expect things to not work out of the box in a Windows environment.
 
@@ -20,6 +25,17 @@ The required python modules are:
 These are all available for installation via the pip installer.
 
 In the future these will be trimmed, as future and six are both required within the Python 3 port of chiplotle used by plotterQt. 
+
+**This program leverages a submodule and symbolic link to allow access to chiplotle**
+
+Setting up a submodule requires an extra step.
+
+1. git clone --recurse-submodules [project link]
+2. git checkout dev_chiplotle
+3. cd into the plotterQt repository
+4. git submodule update
+
+That should populate the chiplote submodule! It might be trickier, so let me know how well this works for clean installations!
 
 ## Usage
 
