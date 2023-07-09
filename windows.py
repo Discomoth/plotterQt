@@ -955,7 +955,7 @@ class penConfigWindow(QtWidgets.QDialog):
                 return 0
             
             # If plotter does not support OT command and does not have a carousel
-            elif not b'OT' in plotterAttributes.plotter.allowedCommands and plotterID not in plotterAttributes.pseudoCarouselPlotters:
+            elif not b'OT' in plotterAttributes.plotter.allowedHPGLCommands and plotterID not in plotterAttributes.pseudoCarouselPlotters:
                 plotterAttributes.penMap = '00000001'
                 plotterAttributes.carouselType = 0
                 return 1
@@ -964,7 +964,7 @@ class penConfigWindow(QtWidgets.QDialog):
             # TODO This probably should be an attribute of the plotter object?
             # It sets the penmap to show there is a pen in every position.
             # It is up to the operator to stock/choose pens.
-            elif not b'OT' in plotterAttributes.plotter.allowedCommands and plotterID in plotterAttributes.pseudoCarouselPlotters:
+            elif not b'OT' in plotterAttributes.plotter.allowedHPGLCommands and plotterID in plotterAttributes.pseudoCarouselPlotters:
                 print('The {} plotter supports carousels, but not auto detection!\rAll pens set as present!'.format(plotterID))
                 
                 # Bit states are all set to 1
