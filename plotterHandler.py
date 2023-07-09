@@ -141,7 +141,7 @@ class plotterAttributes():
     # The 7440A is the only one I am currently aware of that is like this.
     # I'm sure there are others out there.
     pseudoCarouselPlotters = [
-        '7440A'
+        b'7440A'
     ]
 
 
