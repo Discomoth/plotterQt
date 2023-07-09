@@ -997,7 +997,7 @@ class penConfigWindow(QtWidgets.QDialog):
             for index, number in enumerate([number + 1 for number in range(8)]):
                 plotterAttributes.penConfig['Pen ' + str(number)] = {
                     'enabled':True,
-                    'penNumber':1,
+                    'penNumber':number,
                     'color':plotterAttributes.defaultColors[index],
                     'acceleration':1,
                     'velocity':15,
