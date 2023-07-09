@@ -353,119 +353,117 @@ class mainWindow(QtWidgets.QMainWindow):
         # Multiplot handling
         if self.elementModel.rowCount() > 0:
         # Try catch added for keyboard interrupts
-            try:
-                while True:
+            while True:
+                if self.stopFlag:
+                    break
+
+                for elementIndex, element in enumerate(self.elementModel.elements):
+
+                    # Insert and if conditional to catch the stop flag and make the function return?
+                    # Completed plots will be skipped and incomplete ones will remain...
+                    # Do a layoutChanged.emit() at end of each iteration to update the listView?
+                    
+                    # Loop stopFlag break
                     if self.stopFlag:
                         break
+                    # Check if element has been completed already
+                    if element[0]:
+                        pass
 
-                    for elementIndex, element in enumerate(self.elementModel.elements):
+                    elif not element[0]:
+                        # Determine element type
+                        if element[1] == 'HPGL Plot':
+                            print('HPGL Element')
 
-                        # Insert and if conditional to catch the stop flag and make the function return?
-                        # Completed plots will be skipped and incomplete ones will remain...
-                        # Do a layoutChanged.emit() at end of each iteration to update the listView?
-                        
-                        # Loop stopFlag break
-                        if self.stopFlag:
-                            break
-                        # Check if element has been completed already
-                        if element[0]:
-                            pass
+                            penConfigs = element[3]['HPGL Plot']['penConfig']
+                            plotInfo = element[3]['HPGL Plot']['chiplotleHPGL']
 
-                        elif not element[0]:
-                            # Determine element type
-                            if element[1] == 'HPGL Plot':
-                                print('HPGL Element')
+                            # Pen setup
+                            ## Get the pen info and make into list of chiplotle
+                            ## HPGL objects.
+                            setupCommands = [
+                                commands.SP(penConfigs['penNumber']),
+                                commands.VS(penConfigs['velocity']),
+                                commands.AS(penConfigs['acceleration']),
+                                commands.FS(penConfigs['force']),
+                            ]
 
-                                penConfigs = element[3]['HPGL Plot']['penConfig']
-                                plotInfo = element[3]['HPGL Plot']['chiplotleHPGL']
+                            ## Iterate through the setup commands, writing to plotter
+                            for command in setupCommands:
+                                plotterAttributes.plotter.write(command)
+                                time.sleep(1)
 
-                                # Pen setup
-                                ## Get the pen info and make into list of chiplotle
-                                ## HPGL objects.
-                                setupCommands = [
-                                    commands.SP(penConfigs['penNumber']),
-                                    commands.VS(penConfigs['velocity']),
-                                    commands.AS(penConfigs['acceleration']),
-                                    commands.FS(penConfigs['force']),
-                                ]
+                            # Plot setup
+                            plotterAttributes.plotter.write(plotInfo)
 
-                                ## Iterate through the setup commands, writing to plotter
-                                for command in setupCommands:
-                                    plotterAttributes.plotter.write(command)
-                                    time.sleep(1)
+                        elif element[1] == 'Wait':
+                            print('Wait Element')
+                            waitTime = element[3]['Wait']['waitTime']
 
-                                # Plot setup
-                                plotterAttributes.plotter.write(plotInfo)
+                            time.sleep(waitTime)
+                            print('Waited: {} Seconds'.format(waitTime))
 
-                            elif element[1] == 'Wait':
-                                print('Wait Element')
-                                waitTime = element[3]['Wait']['waitTime']
+                        elif element[1] == 'Pause':
+                            dialogWindow = pauseWindow()
+                            if dialogWindow.exec():
+                                print('Accepted!')
+                            else:
+                                print('Rejected - multiPlot sequence stopping')
+                                self.stopFlag = True
 
-                                time.sleep(waitTime)
-                                print('Waited: {} Seconds'.format(waitTime))
+                        elif element[1] == 'Page Feed':
+                            pageFeedCommand = commands.PG()
+                            plotterAttributes.plotter.write(pageFeedCommand)
 
-                            elif element[1] == 'Pause':
-                                dialogWindow = pauseWindow()
-                                if dialogWindow.exec():
-                                    print('Accepted!')
-                                else:
-                                    print('Rejected - multiPlot sequence stopping')
-                                    self.stopFlag = True
+                        elif element[1] == 'Repeat':
 
-                            elif element[1] == 'Page Feed':
-                                pageFeedCommand = commands.PG()
-                                plotterAttributes.plotter.write(pageFeedCommand)
+                            # If it appears this is the first repeat element encountered
+                            if self.multiPlotRepeatCount == None:
+                                self.multiPlotRepeatCount = element[3]['Repeat']['count']
+                                self.multiPlotRepeatRemainder = element[3]['Repeat']['remaining'] - 1
 
-                            elif element[1] == 'Repeat':
-
-                                # If it appears this is the first repeat element encountered
-                                if self.multiPlotRepeatCount == None:
-                                    self.multiPlotRepeatCount = element[3]['Repeat']['count']
-                                    self.multiPlotRepeatRemainder = element[3]['Repeat']['remaining'] - 1
-
-                                # If it appears this is a cycle of the repeat
-                                elif self.multiPlotRepeatCount != None:
-                                    print('Plots remaining: {}'.format(self.multiPlotRepeatRemainder) + '/{}'.format(self.multiPlotRepeatCount))
-                                    pass
-
-                                else:
-                                    print('Repeat Element parsing missed if catches')
+                            # If it appears this is a cycle of the repeat
+                            elif self.multiPlotRepeatCount != None:
+                                print('Plots remaining: {}'.format(self.multiPlotRepeatRemainder) + '/{}'.format(self.multiPlotRepeatCount))
+                                pass
 
                             else:
-                                print('Unknown multiPlot Element entry in startPlot command')
+                                print('Repeat Element parsing missed if catches')
 
-                            # To indicate plotting complete, the first item in the element
-                            # tuple, the elementStatus is changed to True to indicate it
-                            # has already been run.
+                        else:
+                            print('Unknown multiPlot Element entry in startPlot command')
 
-                            # Make a new tuple by adding a single item tuple to the front
-                            # of the value of the element in the elementModel.
-                            newTuple = tuple([True]) + self.elementModel.elements[elementIndex][1:]
+                        # To indicate plotting complete, the first item in the element
+                        # tuple, the elementStatus is changed to True to indicate it
+                        # has already been run.
 
-                            # Write the new tuple to the element.
-                            self.elementModel.elements[elementIndex] = newTuple
-                            self.elementModel.layoutChanged.emit()
+                        # Make a new tuple by adding a single item tuple to the front
+                        # of the value of the element in the elementModel.
+                        newTuple = tuple([True]) + self.elementModel.elements[elementIndex][1:]
 
-                    if self.multiPlotRepeatRemainder == None:
-                        self.stopFlag = True
-                        
-                        # Reset the element completion states
-                        self.resetElementFlags(False)
+                        # Write the new tuple to the element.
+                        self.elementModel.elements[elementIndex] = newTuple
+                        self.elementModel.layoutChanged.emit()
 
-                    elif not self.multiPlotRepeatRemainder <= 0:
-                        # Deincrement remaining plot value
-                        self.multiPlotRepeatRemainder -= 1
+                if self.multiPlotRepeatRemainder == None:
+                    self.stopFlag = True
+                    
+                    # Reset the element completion states
+                    self.resetElementFlags(False)
 
-                        # Reset flag states to allow repeat plot
-                        self.resetElementFlags(False)
+                elif not self.multiPlotRepeatRemainder <= 0:
+                    # Deincrement remaining plot value
+                    self.multiPlotRepeatRemainder -= 1
 
-                    elif self.multiPlotRepeatRemainder <= 0:
-                        self.stopFlag = True
+                    # Reset flag states to allow repeat plot
+                    self.resetElementFlags(False)
 
-                    else:
-                        print("Oops! Infinite loop in startPlot!")
-            except KeyboardInterrupt:
-                print("Sequence suspended via KeyboardInterrupt")
+                elif self.multiPlotRepeatRemainder <= 0:
+                    self.stopFlag = True
+
+                else:
+                    print("Oops! Infinite loop in startPlot!")
+
 
         # Old style of single plot handling - sort of outdated now...
         elif self.elementModel.rowCount() > 0 and len(self.hpglString_chiplotle) != 0:
